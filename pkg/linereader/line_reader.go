@@ -83,8 +83,8 @@ func (lr *LineReader) Close() error {
 // the input returned by Read may be the same as the previous input.
 // It is up to the caller to deduplicate responses if they care to.
 func (lr *LineReader) Read() ([]rune, Command, error) {
-	// TODO: render the cursor at cursorPos, instead of wherever
 	fmt.Print("\033[2K\r> ", string(lr.input))
+	fmt.Printf("\033[%dG", lr.cursorPos+len(lr.prompt)+1)
 
 	bufLen, err := os.Stdin.Read(lr.buf[:])
 	if err != nil {
@@ -109,8 +109,9 @@ func (lr *LineReader) Read() ([]rune, Command, error) {
 
 	rune, _ := utf8.DecodeRune(bufPart)
 	if rune == Backspace {
-		if len(lr.input) > 0 {
-			lr.input = lr.input[:len(lr.input)-1]
+		if lr.cursorPos > 0 {
+			lr.input = slices.Delete(lr.input, lr.cursorPos-1, lr.cursorPos)
+			lr.cursorPos -= 1
 		}
 	} else if rune == CtrlC {
 		// TODO: better way to handle this than just returning an EOF :/
@@ -122,8 +123,8 @@ func (lr *LineReader) Read() ([]rune, Command, error) {
 		// Intentionally ignore all other control characters,
 		// and only accept characters which are symbolic in some way.
 	} else {
-		// TODO: splice things into cursorPos, instead of just putting them wherever
-		lr.input = append(lr.input, rune)
+		lr.input = slices.Insert(lr.input, lr.cursorPos, rune)
+		lr.cursorPos += 1
 	}
 	return lr.input, CommandNone, nil
 }
