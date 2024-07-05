@@ -1,20 +1,19 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
-	"unicode/utf8"
 
 	"github.com/crockeo/ekad/pkg/database"
+	"github.com/crockeo/ekad/pkg/linereader"
 	"github.com/crockeo/ekad/pkg/models"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/term"
 )
 
 func main() {
@@ -71,41 +70,21 @@ func new(ctx *cli.Context, db *database.Database) error {
 }
 
 func search(ctx *cli.Context, db *database.Database) error {
-	// Prepare terminal for raw input
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	lineReader, err := linereader.New()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	defer lineReader.Close()
 
-	// Handle interrupts to restore terminal state on exit
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		term.Restore(int(os.Stdin.Fd()), oldState)
-		os.Exit(1)
-	}()
-
-	// Read and process user input
-	var input []rune
 	fmt.Print("> ")
 	for {
-		var buf [1]byte
-		os.Stdin.Read(buf[:])
-		r, _ := utf8.DecodeRune(buf[:])
-		if r == '\x03' {
+		input, err := lineReader.Read()
+		if errors.Is(err, io.EOF) {
 			break
-		} else if r == '\r' || r == '\n' {
-			break
-		} else if r == 127 { // Handle backspace
-			if len(input) > 0 {
-				input = input[:len(input)-1]
-			}
-		} else {
-			input = append(input, r)
+		} else if err != nil {
+			return err
 		}
-		fmt.Print("\033[2K\r> " + string(input))
+		fmt.Print("\033[2K\r> ", string(input))
 	}
 
 	return nil
