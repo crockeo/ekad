@@ -70,21 +70,19 @@ func new(ctx *cli.Context, db *database.Database) error {
 }
 
 func search(ctx *cli.Context, db *database.Database) error {
-	lineReader, err := linereader.New()
+	lineReader, err := linereader.New("> ")
 	if err != nil {
 		return err
 	}
 	defer lineReader.Close()
 
-	fmt.Print("> ")
 	for {
-		input, err := lineReader.Read()
+		_, _, err := lineReader.Read()
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return err
 		}
-		fmt.Print("\033[2K\r> ", string(input))
 	}
 
 	return nil
