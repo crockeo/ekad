@@ -106,6 +106,7 @@ func (lr *LineReader) Read() ([]rune, Command, error) {
 			lr.cursorPos -= 1
 		}
 	}
+	// TODO: support emacs-style Ctrl-A and Ctrl-E bringing you to front + back of line, respectively
 
 	rune, _ := utf8.DecodeRune(bufPart)
 	if rune == Backspace {
