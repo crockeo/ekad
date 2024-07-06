@@ -15,8 +15,12 @@ import (
 
 const (
 	Backspace rune = '\x7F'
+	CtrlA     rune = '\x01'
 	CtrlC     rune = '\x03'
 	CtrlD     rune = '\x04'
+	CtrlE     rune = '\x05'
+
+	Escape byte = '\x1b'
 )
 
 type Command int
@@ -92,21 +96,19 @@ func (lr *LineReader) Read() ([]rune, Command, error) {
 	}
 	bufPart := lr.buf[:bufLen]
 
-	// TODO: magic numbers!
-	if slices.Equal(bufPart, []byte{27, 91, 65}) {
+	if slices.Equal(bufPart, []byte{Escape, '[', 'A'}) {
 		return lr.input, CommandUp, nil
-	} else if slices.Equal(bufPart, []byte{27, 91, 66}) {
+	} else if slices.Equal(bufPart, []byte{Escape, '[', 'B'}) {
 		return lr.input, CommandDown, nil
-	} else if slices.Equal(bufPart, []byte{27, 91, 'C'}) {
+	} else if slices.Equal(bufPart, []byte{Escape, '[', 'C'}) {
 		if lr.cursorPos < len(lr.input) {
 			lr.cursorPos += 1
 		}
-	} else if slices.Equal(bufPart, []byte{27, 91, 'D'}) {
+	} else if slices.Equal(bufPart, []byte{Escape, '[', 'D'}) {
 		if lr.cursorPos > 0 {
 			lr.cursorPos -= 1
 		}
 	}
-	// TODO: support emacs-style Ctrl-A and Ctrl-E bringing you to front + back of line, respectively
 
 	rune, _ := utf8.DecodeRune(bufPart)
 	if rune == Backspace {
@@ -114,12 +116,16 @@ func (lr *LineReader) Read() ([]rune, Command, error) {
 			lr.input = slices.Delete(lr.input, lr.cursorPos-1, lr.cursorPos)
 			lr.cursorPos -= 1
 		}
+	} else if rune == CtrlA {
+		lr.cursorPos = 0
 	} else if rune == CtrlC {
 		// TODO: better way to handle this than just returning an EOF :/
 		// this is not the same thing as EOF (which should be returned through Ctrl+D)
 		return nil, CommandNone, io.EOF
 	} else if rune == CtrlD {
 		return nil, CommandNone, io.EOF
+	} else if rune == CtrlE {
+		lr.cursorPos = len(lr.input)
 	} else if rune < '\x20' {
 		// Intentionally ignore all other control characters,
 		// and only accept characters which are symbolic in some way.
