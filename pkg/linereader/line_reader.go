@@ -86,20 +86,20 @@ func (lr *LineReader) Close() error {
 // Note that for certain actions (e.g. moving the cursor)
 // the input returned by Read may be the same as the previous input.
 // It is up to the caller to deduplicate responses if they care to.
-func (lr *LineReader) Read() ([]rune, Command, error) {
+func (lr *LineReader) Read() (string, Command, error) {
 	fmt.Print("\033[2K\r> ", string(lr.input))
 	fmt.Printf("\033[%dG", lr.cursorPos+len(lr.prompt)+1)
 
 	bufLen, err := os.Stdin.Read(lr.buf[:])
 	if err != nil {
-		return nil, CommandNone, err
+		return "", CommandNone, err
 	}
 	bufPart := lr.buf[:bufLen]
 
 	if slices.Equal(bufPart, []byte{Escape, '[', 'A'}) {
-		return lr.input, CommandUp, nil
+		return string(lr.input), CommandUp, nil
 	} else if slices.Equal(bufPart, []byte{Escape, '[', 'B'}) {
-		return lr.input, CommandDown, nil
+		return string(lr.input), CommandDown, nil
 	} else if slices.Equal(bufPart, []byte{Escape, '[', 'C'}) {
 		if lr.cursorPos < len(lr.input) {
 			lr.cursorPos += 1
@@ -121,9 +121,9 @@ func (lr *LineReader) Read() ([]rune, Command, error) {
 	} else if rune == CtrlC {
 		// TODO: better way to handle this than just returning an EOF :/
 		// this is not the same thing as EOF (which should be returned through Ctrl+D)
-		return nil, CommandNone, io.EOF
+		return "", CommandNone, io.EOF
 	} else if rune == CtrlD {
-		return nil, CommandNone, io.EOF
+		return "", CommandNone, io.EOF
 	} else if rune == CtrlE {
 		lr.cursorPos = len(lr.input)
 	} else if rune < '\x20' {
@@ -133,5 +133,5 @@ func (lr *LineReader) Read() ([]rune, Command, error) {
 		lr.input = slices.Insert(lr.input, lr.cursorPos, rune)
 		lr.cursorPos += 1
 	}
-	return lr.input, CommandNone, nil
+	return string(lr.input), CommandNone, nil
 }

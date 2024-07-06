@@ -1,17 +1,20 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/crockeo/ekad/pkg/database"
 	"github.com/crockeo/ekad/pkg/linereader"
 	"github.com/crockeo/ekad/pkg/models"
 	"github.com/google/uuid"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/urfave/cli/v2"
 )
@@ -36,6 +39,14 @@ func mainImpl() error {
 		Name: "ek",
 		Commands: []*cli.Command{
 			{
+				Name:    "list",
+				Aliases: []string{"l"},
+				Usage:   "List all tasks",
+				Action: func(ctx *cli.Context) error {
+					return list(ctx, db)
+				},
+			},
+			{
 				Name:    "new",
 				Aliases: []string{"n"},
 				Usage:   "Create a new task",
@@ -56,6 +67,20 @@ func mainImpl() error {
 	return app.Run(os.Args)
 }
 
+func list(ctx *cli.Context, db *database.Database) error {
+	tasks, err := db.GetAll()
+	if err != nil {
+		return err
+	}
+	slices.SortFunc(tasks, func(t1 models.Task, t2 models.Task) int {
+		return cmp.Compare(t1.ID.ID(), t2.ID.ID())
+	})
+	for _, task := range tasks {
+		fmt.Println(task.Title)
+	}
+	return nil
+}
+
 func new(ctx *cli.Context, db *database.Database) error {
 	id, err := uuid.NewV7()
 	if err != nil {
@@ -70,6 +95,20 @@ func new(ctx *cli.Context, db *database.Database) error {
 }
 
 func search(ctx *cli.Context, db *database.Database) error {
+	// Depending on how well this performs when I have many more potential entries,
+	// instead consider something that runs in-SQLite, like spellfix1 and FTS4
+	//
+	// https://www.sqlite.org/spellfix1.html
+	// https://www.sqlite.org/fts3.html
+	tasks, err := db.GetAll()
+	if err != nil {
+		return err
+	}
+	targets := make([]string, 0, len(tasks))
+	for _, task := range tasks {
+		targets = append(targets, task.Title)
+	}
+
 	lineReader, err := linereader.New("> ")
 	if err != nil {
 		return err
@@ -77,11 +116,16 @@ func search(ctx *cli.Context, db *database.Database) error {
 	defer lineReader.Close()
 
 	for {
-		_, _, err := lineReader.Read()
+		input, _, err := lineReader.Read()
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return err
+		}
+
+		ranks := fuzzy.RankFindNormalizedFold(input, targets)
+		for _, rank := range ranks {
+			fmt.Println(rank.Target)
 		}
 	}
 

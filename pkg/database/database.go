@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	"github.com/crockeo/ekad/pkg/models"
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
 	ErrFailedToCreate = errors.New("Failed to create database")
 	ErrInvalidID      = errors.New("Task has an invalid ID")
+	ErrMissingTask    = errors.New("No such task")
 )
 
 type Database struct {
@@ -47,15 +49,64 @@ func (db *Database) Migrate() error {
 	`); err != nil {
 		return err
 	}
-	if _, err := db.inner.Exec(`
-		CREATE VIRTUAL TABLE IF NOT EXISTS task_titles USING fts4(
+	return nil
+}
+
+// Get retrieves a Task from the database with the provided ID.
+// If the UUID is invalid, or there is no
+func (db *Database) Get(id uuid.UUID) (models.Task, error) {
+	row := db.inner.QueryRow(
+		`
+		SELECT
 			id,
 			title
-		)
-	`); err != nil {
-		return err
+		FROM tasks
+		WHERE id = ?
+		`,
+		id.String(),
+	)
+
+	task := models.Task{}
+	err := row.Scan(
+		&task.ID,
+		&task.Title,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.Task{}, ErrMissingTask
+	} else if err != nil {
+		return models.Task{}, err
 	}
-	return nil
+
+	return task, nil
+}
+
+// GetAll returns the total set of Tasks in the database.
+// This is useful when one wants to perform a search over all possible tasks.
+func (db *Database) GetAll() ([]models.Task, error) {
+	rows, err := db.inner.Query(
+		`
+		SELECT
+			id,
+			title
+		FROM tasks
+		`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tasks := []models.Task{}
+	var task models.Task
+	for rows.Next() {
+		if err := rows.Scan(
+			&task.ID,
+			&task.Title,
+		); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
 }
 
 // Upsert performs an update/insert on the provided Task.
@@ -73,7 +124,7 @@ func (db *Database) Upsert(task models.Task) error {
 
 	if _, err := db.inner.Exec(
 		`
-		INSERT INTO tasks (
+		INSERT OR REPLACE INTO tasks (
 			id,
 			title
 		) VALUES (
@@ -86,22 +137,5 @@ func (db *Database) Upsert(task models.Task) error {
 	); err != nil {
 		return err
 	}
-
-	if _, err := db.inner.Exec(
-		`
-		INSERT INTO task_titles (
-			id,
-			title
-		) VALUES (
-			?,
-			?
-		)
-		`,
-		task.ID.String(),
-		task.Title,
-	); err != nil {
-		return err
-	}
-
 	return err
 }
