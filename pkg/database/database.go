@@ -47,6 +47,14 @@ func (db *Database) Migrate() error {
 	`); err != nil {
 		return err
 	}
+	if _, err := db.inner.Exec(`
+		CREATE VIRTUAL TABLE IF NOT EXISTS task_titles USING fts4(
+			id,
+			title
+		)
+	`); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -55,11 +63,15 @@ func (db *Database) Migrate() error {
 // All columns will be replaced with the contents of the Task,
 // even if they are empty.
 func (db *Database) Upsert(task models.Task) error {
+	// TODO: this is just an insert, make it an upsert
 	renderedUUID := task.ID.String()
 	if renderedUUID == "" {
 		return ErrInvalidID
 	}
-	_, err := db.inner.Exec(
+	tx, err := db.inner.Begin()
+	defer tx.Rollback()
+
+	if _, err := db.inner.Exec(
 		`
 		INSERT INTO tasks (
 			id,
@@ -71,6 +83,25 @@ func (db *Database) Upsert(task models.Task) error {
 		`,
 		task.ID.String(),
 		task.Title,
-	)
+	); err != nil {
+		return err
+	}
+
+	if _, err := db.inner.Exec(
+		`
+		INSERT INTO task_titles (
+			id,
+			title
+		) VALUES (
+			?,
+			?
+		)
+		`,
+		task.ID.String(),
+		task.Title,
+	); err != nil {
+		return err
+	}
+
 	return err
 }
