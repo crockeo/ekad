@@ -27,6 +27,7 @@ type Command int
 
 const (
 	CommandNone Command = iota
+	CommandExit
 	CommandUp
 	CommandDown
 )
@@ -128,6 +129,8 @@ func (lr *LineReader) Read() (string, Command, error) {
 		return "", CommandNone, io.EOF
 	} else if rune == CtrlE {
 		lr.cursorPos = len(lr.input)
+	} else if rune == '\n' {
+		return "", CommandExit, nil
 	} else if rune < '\x20' {
 		// Intentionally ignore all other control characters,
 		// and only accept characters which are symbolic in some way.
