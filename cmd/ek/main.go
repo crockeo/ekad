@@ -104,6 +104,8 @@ func search(ctx *cli.Context, db *database.Database) error {
 	if err != nil {
 		return err
 	}
+
+	selected := 0
 	targets := make([]string, 0, len(tasks))
 	for _, task := range tasks {
 		targets = append(targets, task.Title)
@@ -117,12 +119,21 @@ func search(ctx *cli.Context, db *database.Database) error {
 
 	lineReader.Prompt()
 	for {
-		input, _, err := lineReader.Read()
+		input, cmd, err := lineReader.Read()
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return err
+		}
 
+		ranks := fuzzy.RankFindNormalizedFold(input, targets)
+		if selected >= len(ranks) {
+			selected = len(ranks) - 1
+		}
+		if cmd == linereader.CommandUp && selected > 0 {
+			selected -= 1
+		} else if cmd == linereader.CommandDown && selected < len(ranks)-1 {
+			selected += 1
 		}
 
 		lineReader.Prompt()
@@ -134,9 +145,12 @@ func search(ctx *cli.Context, db *database.Database) error {
 		})
 		lineReader.WithExcursion(func() error {
 			fmt.Print("\n\r")
-			ranks := fuzzy.RankFindNormalizedFold(input, targets)
-			for _, rank := range ranks {
-				fmt.Printf("%s\n\r", rank.Target)
+			for i, rank := range ranks {
+				if i == selected {
+					fmt.Printf("\033[1m%s\033[22m\n\r", rank.Target)
+				} else {
+					fmt.Printf("%s\n\r", rank.Target)
+				}
 			}
 			return nil
 		})
