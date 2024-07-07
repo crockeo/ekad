@@ -17,11 +17,11 @@ type CursorPos struct {
 	Col int
 }
 
-func setCursorPos(cursorPos CursorPos) {
+func SetCursorPos(cursorPos CursorPos) {
 	fmt.Printf("\033[%d;%dH", cursorPos.Row, cursorPos.Col)
 }
 
-func getCursorPos() (CursorPos, error) {
+func GetCursorPos() (CursorPos, error) {
 	// Magic string -> get the terminal to print cursor position to stdin
 	fmt.Print("\033[6n")
 

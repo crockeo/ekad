@@ -121,15 +121,13 @@ func (lr *LineReader) Read() (string, Command, error) {
 		}
 	} else if rune == CtrlA {
 		lr.cursorPos = 0
-	} else if rune == CtrlC {
-		// TODO: better way to handle this than just returning an EOF :/
-		// this is not the same thing as EOF (which should be returned through Ctrl+D)
-		return "", CommandNone, io.EOF
-	} else if rune == CtrlD {
+	} else if rune == CtrlC || rune == CtrlD {
+		// TODO: make some kind of difference in how we handle this from pressing enter;
+		// these should quit the entire program, rather than just breaking the loop
 		return "", CommandNone, io.EOF
 	} else if rune == CtrlE {
 		lr.cursorPos = len(lr.input)
-	} else if rune == '\n' {
+	} else if rune == '\r' || rune == '\n' {
 		return "", CommandExit, nil
 	} else if rune < '\x20' {
 		// Intentionally ignore all other control characters,
@@ -142,10 +140,10 @@ func (lr *LineReader) Read() (string, Command, error) {
 }
 
 func (lr *LineReader) WithExcursion(fn func() error) error {
-	pos, err := getCursorPos()
+	pos, err := GetCursorPos()
 	if err != nil {
 		return err
 	}
-	defer setCursorPos(pos)
+	defer SetCursorPos(pos)
 	return fn()
 }

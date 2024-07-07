@@ -97,6 +97,13 @@ func new(ctx *cli.Context, db *database.Database) error {
 func search(ctx *cli.Context, db *database.Database) error {
 	// TODO: can i replace this entire thing with just like "use fzf as a library"?
 
+	// TODO: instead of this just being a command, bundle it up in a reusable module so i can have it other places
+	// like for:
+	// - choosing which tasks to edit
+	// - linking two tasks together
+	// - adding / removing tags to tasks
+	//   - and also would be nice to support searching through arbitrary things :)
+
 	// Depending on how well this performs when I have many more potential entries,
 	// instead consider something that runs in-SQLite, like spellfix1 and FTS4
 	//
@@ -107,7 +114,6 @@ func search(ctx *cli.Context, db *database.Database) error {
 		return err
 	}
 
-	var ranks fuzzy.Ranks
 	selected := 0
 	targets := make([]string, 0, len(tasks))
 	for _, task := range tasks {
@@ -120,27 +126,13 @@ func search(ctx *cli.Context, db *database.Database) error {
 	}
 	defer lineReader.Close()
 
-	lineReader.Prompt()
+	origPos, err := linereader.GetCursorPos()
+	if err != nil {
+		return err
+	}
+
+	ranks := fuzzy.RankFindNormalizedFold("", targets)
 	for {
-		input, cmd, err := lineReader.Read()
-		if errors.Is(err, io.EOF) {
-			break
-		} else if err != nil {
-			return err
-		}
-
-		ranks = fuzzy.RankFindNormalizedFold(input, targets)
-		if selected >= len(ranks) {
-			selected = len(ranks) - 1
-		}
-		if cmd == linereader.CommandExit {
-			break
-		} else if cmd == linereader.CommandUp && selected > 0 {
-			selected -= 1
-		} else if cmd == linereader.CommandDown && selected < len(ranks)-1 {
-			selected += 1
-		}
-
 		lineReader.Prompt()
 		// TODO: render a maximum of <end of terminal> - <cursor position> elements
 		// OR instead move the cursor position further up the screen if needed
@@ -161,12 +153,35 @@ func search(ctx *cli.Context, db *database.Database) error {
 			}
 			return nil
 		})
+		input, cmd, err := lineReader.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		ranks = fuzzy.RankFindNormalizedFold(input, targets)
+		if len(ranks) > 0 && selected >= len(ranks) {
+			selected = len(ranks) - 1
+		}
+		if cmd == linereader.CommandExit && len(ranks) > 0 {
+			break
+		} else if cmd == linereader.CommandUp && selected > 0 {
+			selected -= 1
+		} else if cmd == linereader.CommandDown && selected < len(ranks)-1 {
+			selected += 1
+		}
+
 	}
 
-	// TODO:
-	// - clear out the space that we used for searching on the screen
-	// - move the cursor to the location that we would have been in to start printing
-	// - print out the information about the task that we want to print :)
+	// TODO: bundle this in a better way, so that it's not leaking internals
+	// of how we manage the terminal inside of lineReader
+	linereader.SetCursorPos(origPos)
+	for range targets {
+		fmt.Print("\n\033[2K")
+	}
+	linereader.SetCursorPos(origPos)
+	lineReader.Close()
 
 	selectedRank := ranks[selected]
 	task := tasks[selectedRank.OriginalIndex]
