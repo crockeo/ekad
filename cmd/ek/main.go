@@ -126,11 +126,20 @@ func search(ctx *cli.Context, db *database.Database) error {
 		}
 
 		lineReader.Prompt()
-		fmt.Print("\n")
-		ranks := fuzzy.RankFindNormalizedFold(input, targets)
-		for _, rank := range ranks {
-			fmt.Println(rank.Target)
-		}
+		lineReader.WithExcursion(func() error {
+			for range targets {
+				fmt.Print("\n\033[2K")
+			}
+			return nil
+		})
+		lineReader.WithExcursion(func() error {
+			fmt.Print("\n\r")
+			ranks := fuzzy.RankFindNormalizedFold(input, targets)
+			for _, rank := range ranks {
+				fmt.Printf("%s\n\r", rank.Target)
+			}
+			return nil
+		})
 	}
 
 	return nil
