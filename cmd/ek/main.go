@@ -115,14 +115,18 @@ func search(ctx *cli.Context, db *database.Database) error {
 	}
 	defer lineReader.Close()
 
+	lineReader.Prompt()
 	for {
 		input, _, err := lineReader.Read()
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return err
+
 		}
 
+		lineReader.Prompt()
+		fmt.Print("\n")
 		ranks := fuzzy.RankFindNormalizedFold(input, targets)
 		for _, rank := range ranks {
 			fmt.Println(rank.Target)

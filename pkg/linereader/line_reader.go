@@ -81,15 +81,17 @@ func (lr *LineReader) Close() error {
 	return errors.Join(errs...)
 }
 
+func (lr *LineReader) Prompt() {
+	fmt.Print("\033[2K\r> ", string(lr.input))
+	fmt.Printf("\033[%dG", lr.cursorPos+len(lr.prompt)+1)
+}
+
 // Read reads a single character from the user's input,
 // and then returns the current input.
 // Note that for certain actions (e.g. moving the cursor)
 // the input returned by Read may be the same as the previous input.
 // It is up to the caller to deduplicate responses if they care to.
 func (lr *LineReader) Read() (string, Command, error) {
-	fmt.Print("\033[2K\r> ", string(lr.input))
-	fmt.Printf("\033[%dG", lr.cursorPos+len(lr.prompt)+1)
-
 	bufLen, err := os.Stdin.Read(lr.buf[:])
 	if err != nil {
 		return "", CommandNone, err
