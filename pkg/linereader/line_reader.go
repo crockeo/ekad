@@ -57,8 +57,8 @@ func New(prompt string) (*LineReader, error) {
 			return
 		}
 		term.Restore(int(os.Stdin.Fd()), previousTermState)
-		// TODO: is there a way to make the program just deal with the signal as normal?
-		os.Exit(1)
+		signal.Stop(signalChan)
+		syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 	}()
 
 	return &LineReader{
