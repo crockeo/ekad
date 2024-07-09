@@ -114,7 +114,6 @@ func (db *Database) GetAll() ([]models.Task, error) {
 // All columns will be replaced with the contents of the Task,
 // even if they are empty.
 func (db *Database) Upsert(task models.Task) error {
-	// TODO: this is just an insert, make it an upsert
 	renderedUUID := task.ID.String()
 	if renderedUUID == "" {
 		return ErrInvalidID
