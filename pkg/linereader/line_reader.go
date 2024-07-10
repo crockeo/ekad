@@ -121,9 +121,9 @@ func (lr *LineReader) Read() (string, Command, error) {
 		}
 	} else if rune == CtrlA {
 		lr.cursorPos = 0
-	} else if rune == CtrlC || rune == CtrlD {
-		// TODO: make some kind of difference in how we handle this from pressing enter;
-		// these should quit the entire program, rather than just breaking the loop
+	} else if rune == CtrlC {
+		syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	} else if rune == CtrlD {
 		return "", CommandNone, io.EOF
 	} else if rune == CtrlE {
 		lr.cursorPos = len(lr.input)

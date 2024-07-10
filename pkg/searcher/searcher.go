@@ -1,9 +1,7 @@
 package searcher
 
 import (
-	"errors"
 	"fmt"
-	"io"
 
 	"github.com/crockeo/ekad/pkg/linereader"
 	"github.com/lithammer/fuzzysearch/fuzzy"
@@ -56,9 +54,7 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 			return nil
 		})
 		input, cmd, err := lineReader.Read()
-		if errors.Is(err, io.EOF) {
-			break
-		} else if err != nil {
+		if err != nil {
 			return nil, err
 		}
 
