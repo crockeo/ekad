@@ -1,4 +1,4 @@
-package linereader
+package terminal
 
 import (
 	"errors"
@@ -53,4 +53,13 @@ func parseCursorPos(buf []byte) (CursorPos, error) {
 	}
 
 	return CursorPos{Row: row, Col: col}, nil
+}
+
+func WithExcursion(fn func() error) error {
+	pos, err := GetCursorPos()
+	if err != nil {
+		return err
+	}
+	defer SetCursorPos(pos)
+	return fn()
 }

@@ -1,4 +1,4 @@
-package linereader
+package terminal
 
 import (
 	"testing"

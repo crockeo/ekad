@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/crockeo/ekad/pkg/linereader"
+	"github.com/crockeo/ekad/pkg/terminal"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
@@ -31,18 +32,18 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	linereader.SetCursorPos(origPos)
+	terminal.SetCursorPos(origPos)
 
 	ranks := fuzzy.RankFindNormalizedFold("", targets)
 	for {
 		lineReader.Prompt()
-		lineReader.WithExcursion(func() error {
+		terminal.WithExcursion(func() error {
 			for range targets {
 				fmt.Print("\n\033[2K")
 			}
 			return nil
 		})
-		lineReader.WithExcursion(func() error {
+		terminal.WithExcursion(func() error {
 			fmt.Print("\n\r")
 			for i, rank := range ranks {
 				if i == selected {
@@ -72,14 +73,13 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 
 	}
 
-	// TODO: bundle this in a better way, so that it's not leaking internals
-	// of how we manage the terminal inside of lineReader
-	linereader.SetCursorPos(origPos)
-	for range targets {
-		fmt.Print("\n\033[2K")
-	}
-	linereader.SetCursorPos(origPos)
-	lineReader.Close()
+	terminal.SetCursorPos(origPos)
+	terminal.WithExcursion(func() error {
+		for range targets {
+			fmt.Print("\n\033[2K")
+		}
+		return nil
+	})
 
 	selectedRank := ranks[selected]
 	return &items[selectedRank.OriginalIndex], nil
@@ -89,21 +89,21 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 // for the number of items that are being searched through.
 // If the number of items exceeds the vertical space available on the terminal
 // it will instead clear the terminal for searching.
-func prepareSearchSpace(requiredSpace int) (linereader.CursorPos, error) {
-	cursorPos, err := linereader.GetCursorPos()
+func prepareSearchSpace(requiredSpace int) (terminal.CursorPos, error) {
+	cursorPos, err := terminal.GetCursorPos()
 	if err != nil {
-		return linereader.CursorPos{}, err
+		return terminal.CursorPos{}, err
 	}
 
-	defer linereader.SetCursorPos(cursorPos)
-	linereader.SetCursorPos(linereader.CursorPos{
+	defer terminal.SetCursorPos(cursorPos)
+	terminal.SetCursorPos(terminal.CursorPos{
 		Row: 999,
 		Col: 999,
 	})
 
-	maxPos, err := linereader.GetCursorPos()
+	maxPos, err := terminal.GetCursorPos()
 	if err != nil {
-		return linereader.CursorPos{}, err
+		return terminal.CursorPos{}, err
 	}
 
 	availableSpace := maxPos.Row - cursorPos.Row
@@ -115,7 +115,7 @@ func prepareSearchSpace(requiredSpace int) (linereader.CursorPos, error) {
 		// make space by pushing up the rest of the content!
 		fmt.Print("\n")
 	}
-	return linereader.CursorPos{
+	return terminal.CursorPos{
 		Row: maxPos.Row - requiredSpace,
 		Col: cursorPos.Col,
 	}, nil

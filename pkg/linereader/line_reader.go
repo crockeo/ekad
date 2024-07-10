@@ -138,12 +138,3 @@ func (lr *LineReader) Read() (string, Command, error) {
 	}
 	return string(lr.input), CommandNone, nil
 }
-
-func (lr *LineReader) WithExcursion(fn func() error) error {
-	pos, err := GetCursorPos()
-	if err != nil {
-		return err
-	}
-	defer SetCursorPos(pos)
-	return fn()
-}
