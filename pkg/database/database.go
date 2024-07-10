@@ -29,27 +29,7 @@ func Open(path string) (*Database, error) {
 }
 
 func (db *Database) Migrate() error {
-	// TODO: more advanced database migrations :)
-	if _, err := db.inner.Exec(`
-		CREATE TABLE IF NOT EXISTS tasks (
-		    id VARCHAR PRIMARY KEY,
-		    title VARCHAR
-		)
-	`); err != nil {
-		return err
-	}
-	if _, err := db.inner.Exec(`
-		CREATE TABLE IF NOT EXISTS task_links (
-			parent_id VARCHAR,
-			child_id VARCHAR,
-			PRIMARY KEY (parent_id, child_id),
-			FOREIGN KEY (parent_id) REFERENCES tasks(id),
-			FOREIGN KEY (child_id) REFERENCES tasks(id)
-		)
-	`); err != nil {
-		return err
-	}
-	return nil
+	return applyPendingMigrations(db.inner)
 }
 
 // Get retrieves a Task from the database with the provided ID.
