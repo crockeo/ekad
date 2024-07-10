@@ -31,7 +31,7 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 	}
 	defer lineReader.Close()
 
-	origPos, err := prepareSearchSpace(len(items))
+	origPos, err := prepareSearchSpace(len(items) + 1)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +40,6 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 	ranks := fuzzy.RankFindNormalizedFold("", targets)
 	for {
 		lineReader.Prompt()
-		// TODO: render a maximum of <end of terminal> - <cursor position> elements
-		// OR instead move the cursor position further up the screen if needed
 		lineReader.WithExcursion(func() error {
 			for range targets {
 				fmt.Print("\n\033[2K")
@@ -97,8 +95,7 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 // for the number of items that are being searched through.
 // If the number of items exceeds the vertical space available on the terminal
 // it will instead clear the terminal for searching.
-func prepareSearchSpace(itemCount int) (linereader.CursorPos, error) {
-	// TODO: this is off by 1! we're forgetting the line for the prompt
+func prepareSearchSpace(requiredSpace int) (linereader.CursorPos, error) {
 	cursorPos, err := linereader.GetCursorPos()
 	if err != nil {
 		return linereader.CursorPos{}, err
@@ -116,16 +113,16 @@ func prepareSearchSpace(itemCount int) (linereader.CursorPos, error) {
 	}
 
 	availableSpace := maxPos.Row - cursorPos.Row
-	if availableSpace >= itemCount {
+	if availableSpace >= requiredSpace {
 		return cursorPos, nil
 	}
 
-	for i := 0; i < itemCount-availableSpace; i++ {
+	for i := 0; i < requiredSpace-availableSpace; i++ {
 		// make space by pushing up the rest of the content!
 		fmt.Print("\n")
 	}
 	return linereader.CursorPos{
-		Row: maxPos.Row - itemCount,
+		Row: maxPos.Row - requiredSpace,
 		Col: cursorPos.Col,
 	}, nil
 }
