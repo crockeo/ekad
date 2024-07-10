@@ -12,8 +12,6 @@ import (
 // Search performs a command-line search of the provided items
 // by fuzzy-finding their rendered contents.
 func Search[T any](items []T, renderer func(T) string) (*T, error) {
-	// TODO: can i replace this entire thing with just like "use fzf as a library"?
-
 	// Depending on how well this performs when I have many more potential entries,
 	// instead consider something that runs in-SQLite, like spellfix1 and FTS4
 	//
