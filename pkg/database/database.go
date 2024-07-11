@@ -33,26 +33,22 @@ func (db *Database) Migrate() error {
 	return applyPendingMigrations(db.inner)
 }
 
-// Link links together two tasks, such that
-// the task belonging to parentID is marked as depending on
-// the task belonging to childID.
-func (db *Database) Link(parentID uuid.UUID, childID uuid.UUID) error {
-	// TODO: before we commit this, make sure that we're not creating a cycle in our tasks
-	_, err := db.inner.Exec(
-		`
-		INSERT OR REPLACE INTO task_links (
-			parent_id,
-			child_id
-		) VALUES (
-			?,
-			?
-		)
-		`,
-		parentID,
-		childID,
+func (db *Database) Complete(id uuid.UUID) error {
+	now := time.Now()
+	result, err := db.inner.Exec(
+		"UPDATE tasks SET completed_at = ? WHERE id = ?",
+		now,
+		id,
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to connect task parent %s -> %s child: %w", parentID.String(), childID.String(), err)
+		return fmt.Errorf("Failed to complete task: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrMissingTask
 	}
 	return nil
 }
@@ -85,10 +81,10 @@ func (db *Database) Get(id uuid.UUID) (models.Task, error) {
 		SELECT
 			id,
 			title,
+			completed_at,
 			deleted_at
 		FROM tasks
 		WHERE id = ?
-		  AND deleted_at IS NULL
 		`,
 		id.String(),
 	)
@@ -97,6 +93,7 @@ func (db *Database) Get(id uuid.UUID) (models.Task, error) {
 	err := row.Scan(
 		&task.ID,
 		&task.Title,
+		&task.CompletedAt,
 		&task.DeletedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -116,9 +113,11 @@ func (db *Database) GetAll() ([]models.Task, error) {
 		SELECT
 			id,
 			title,
+			completed_at,
 			deleted_at
 		FROM tasks
-	    WHERE deleted_at IS NULL
+	    WHERE completed_at IS NULL
+	      AND deleted_at IS NULL
 		`,
 	)
 	if err != nil {
@@ -131,6 +130,7 @@ func (db *Database) GetAll() ([]models.Task, error) {
 		if err := rows.Scan(
 			&task.ID,
 			&task.Title,
+			&task.CompletedAt,
 			&task.DeletedAt,
 		); err != nil {
 			return nil, fmt.Errorf("Failed to get all tasks: %w", err)
@@ -138,6 +138,30 @@ func (db *Database) GetAll() ([]models.Task, error) {
 		tasks = append(tasks, task)
 	}
 	return tasks, nil
+}
+
+// Link links together two tasks, such that
+// the task belonging to parentID is marked as depending on
+// the task belonging to childID.
+func (db *Database) Link(parentID uuid.UUID, childID uuid.UUID) error {
+	// TODO: before we commit this, make sure that we're not creating a cycle in our tasks
+	_, err := db.inner.Exec(
+		`
+		INSERT OR REPLACE INTO task_links (
+			parent_id,
+			child_id
+		) VALUES (
+			?,
+			?
+		)
+		`,
+		parentID,
+		childID,
+	)
+	if err != nil {
+		return fmt.Errorf("Failed to connect task parent %s -> %s child: %w", parentID.String(), childID.String(), err)
+	}
+	return nil
 }
 
 // Upsert performs an update/insert on the provided Task.
@@ -157,8 +181,10 @@ func (db *Database) Upsert(task models.Task) error {
 		INSERT OR REPLACE INTO tasks (
 			id,
 			title,
+			completed_at,
 			deleted_at
 		) VALUES (
+			?,
 			?,
 			?,
 			?
@@ -166,6 +192,7 @@ func (db *Database) Upsert(task models.Task) error {
 		`,
 		task.ID.String(),
 		task.Title,
+		task.CompletedAt,
 		task.DeletedAt,
 	); err != nil {
 		return fmt.Errorf("Failed to upsert task: %w", err)

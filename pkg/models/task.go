@@ -7,9 +7,10 @@ import (
 )
 
 type Task struct {
-	ID        uuid.UUID
-	Title     string
-	DeletedAt *time.Time
+	ID          uuid.UUID
+	Title       string
+	CompletedAt *time.Time
+	DeletedAt   *time.Time
 }
 
 func RenderTask(task Task) string {

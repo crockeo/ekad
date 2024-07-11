@@ -37,6 +37,14 @@ func mainImpl() error {
 		Name: "ek",
 		Commands: []*cli.Command{
 			{
+				Name:    "complete",
+				Aliases: []string{"c"},
+				Usage:   "Complete a task",
+				Action: func(ctx *cli.Context) error {
+					return complete(ctx, db)
+				},
+			},
+			{
 				Name:    "delete",
 				Aliases: []string{"d"},
 				Usage:   "Delete a task",
@@ -71,6 +79,34 @@ func mainImpl() error {
 		},
 	}
 	return app.Run(os.Args)
+}
+
+func complete(ctx *cli.Context, db *database.Database) error {
+	id := ctx.Args().Get(0)
+	if id == "" {
+		tasks, err := db.GetAll()
+		if err != nil {
+			return err
+		}
+		if len(tasks) == 0 {
+			fmt.Println("No tasks.")
+			return nil
+		}
+
+		task, err := searcher.Search[models.Task](tasks, models.RenderTask)
+		id = task.ID.String()
+	}
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	if err := db.Complete(uuid); err != nil {
+		return err
+	}
+	fmt.Println("Completed", id)
+
+	return nil
 }
 
 func delete(ctx *cli.Context, db *database.Database) error {

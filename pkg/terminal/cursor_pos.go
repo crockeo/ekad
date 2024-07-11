@@ -22,6 +22,9 @@ func SetCursorPos(cursorPos CursorPos) {
 }
 
 func GetCursorPos() (CursorPos, error) {
+	// TODO: if you have buffered input around a GetCursorPos call
+	// this will panic
+
 	// Magic string -> get the terminal to print cursor position to stdin
 	fmt.Print("\033[6n")
 
