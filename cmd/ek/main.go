@@ -36,6 +36,14 @@ func mainImpl() error {
 		Name: "ek",
 		Commands: []*cli.Command{
 			{
+				Name:    "delete",
+				Aliases: []string{"d"},
+				Usage:   "Delete a task",
+				Action: func(ctx *cli.Context) error {
+					return delete(ctx, db)
+				},
+			},
+			{
 				Name:    "list",
 				Aliases: []string{"l"},
 				Usage:   "List all tasks",
@@ -62,6 +70,31 @@ func mainImpl() error {
 		},
 	}
 	return app.Run(os.Args)
+}
+
+func delete(ctx *cli.Context, db *database.Database) error {
+	id := ctx.Args().Get(0)
+	if id == "" {
+		tasks, err := db.GetAll()
+		if err != nil {
+			return err
+		}
+		if len(tasks) == 0 {
+			fmt.Println("No tasks.")
+			return nil
+		}
+
+		task, err := searcher.Search[models.Task](tasks, func(task models.Task) string {
+			return task.Title
+		})
+		id = task.ID.String()
+	}
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	return db.Delete(uuid)
 }
 
 func list(ctx *cli.Context, db *database.Database) error {
@@ -96,6 +129,11 @@ func search(ctx *cli.Context, db *database.Database) error {
 	if err != nil {
 		return err
 	}
+	if len(tasks) == 0 {
+		fmt.Println("No tasks.")
+		return nil
+	}
+
 	selectedTask, err := searcher.Search[models.Task](tasks, func(task models.Task) string {
 		return task.Title
 	})

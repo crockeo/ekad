@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/crockeo/ekad/pkg/models"
 	"github.com/google/uuid"
@@ -32,6 +33,26 @@ func (db *Database) Migrate() error {
 	return applyPendingMigrations(db.inner)
 }
 
+func (db *Database) Delete(id uuid.UUID) error {
+	now := time.Now()
+	result, err := db.inner.Exec(
+		"UPDATE tasks SET deleted_at = ? WHERE id = ?",
+		now,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("Failed to delete task: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrMissingTask
+	}
+	return nil
+}
+
 // Get retrieves a Task from the database with the provided ID.
 // If the UUID is invalid, or there is no
 func (db *Database) Get(id uuid.UUID) (models.Task, error) {
@@ -39,9 +60,11 @@ func (db *Database) Get(id uuid.UUID) (models.Task, error) {
 		`
 		SELECT
 			id,
-			title
+			title,
+			deleted_at
 		FROM tasks
 		WHERE id = ?
+		  AND deleted_at IS NULL
 		`,
 		id.String(),
 	)
@@ -50,11 +73,12 @@ func (db *Database) Get(id uuid.UUID) (models.Task, error) {
 	err := row.Scan(
 		&task.ID,
 		&task.Title,
+		&task.DeletedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.Task{}, ErrMissingTask
 	} else if err != nil {
-		return models.Task{}, err
+		return models.Task{}, fmt.Errorf("Failed to get task: %w", err)
 	}
 
 	return task, nil
@@ -67,8 +91,10 @@ func (db *Database) GetAll() ([]models.Task, error) {
 		`
 		SELECT
 			id,
-			title
+			title,
+			deleted_at
 		FROM tasks
+	    WHERE deleted_at IS NULL
 		`,
 	)
 	if err != nil {
@@ -81,8 +107,9 @@ func (db *Database) GetAll() ([]models.Task, error) {
 		if err := rows.Scan(
 			&task.ID,
 			&task.Title,
+			&task.DeletedAt,
 		); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Failed to get all tasks: %w", err)
 		}
 		tasks = append(tasks, task)
 	}
@@ -105,16 +132,19 @@ func (db *Database) Upsert(task models.Task) error {
 		`
 		INSERT OR REPLACE INTO tasks (
 			id,
-			title
+			title,
+			deleted_at
 		) VALUES (
+			?,
 			?,
 			?
 		)
 		`,
 		task.ID.String(),
 		task.Title,
+		task.DeletedAt,
 	); err != nil {
-		return err
+		return fmt.Errorf("Failed to upsert task: %w", err)
 	}
 	return err
 }

@@ -1,8 +1,13 @@
 package models
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Task struct {
-	ID    uuid.UUID
-	Title string
+	ID        uuid.UUID
+	Title     string
+	DeletedAt *time.Time
 }
