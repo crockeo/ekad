@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +14,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/urfave/cli/v2"
 )
+
+// TODO: add in https://github.com/fatih/color for better visuals
 
 func main() {
 	if err := mainImpl(); err != nil {
@@ -44,11 +45,11 @@ func mainImpl() error {
 				},
 			},
 			{
-				Name:    "list",
+				Name:    "link",
 				Aliases: []string{"l"},
-				Usage:   "List all tasks",
+				Usage:   "Link two tasks togther",
 				Action: func(ctx *cli.Context) error {
-					return list(ctx, db)
+					return link(ctx, db)
 				},
 			},
 			{
@@ -84,9 +85,7 @@ func delete(ctx *cli.Context, db *database.Database) error {
 			return nil
 		}
 
-		task, err := searcher.Search[models.Task](tasks, func(task models.Task) string {
-			return task.Title
-		})
+		task, err := searcher.Search[models.Task](tasks, models.RenderTask)
 		id = task.ID.String()
 	}
 
@@ -97,18 +96,40 @@ func delete(ctx *cli.Context, db *database.Database) error {
 	return db.Delete(uuid)
 }
 
-func list(ctx *cli.Context, db *database.Database) error {
+func link(ctx *cli.Context, db *database.Database) error {
 	tasks, err := db.GetAll()
+	if err != nil {
+		return nil
+	}
+	if len(tasks) <= 1 {
+		fmt.Println("Not enough tasks to link.")
+	}
+
+	fmt.Println("Choose parent task.")
+	parentTask, err := searcher.Search[models.Task](tasks, models.RenderTask)
 	if err != nil {
 		return err
 	}
-	slices.SortFunc(tasks, func(t1 models.Task, t2 models.Task) int {
-		return cmp.Compare(t1.ID.ID(), t2.ID.ID())
-	})
-	for _, task := range tasks {
-		fmt.Println(task.Title)
+	fmt.Println(">", parentTask.Title)
+
+	// We don't want to let someone choose the same task twice,
+	// so we remove the task we have already selected
+	// from the set of all tasks.
+	for i, task := range tasks {
+		if task == *parentTask {
+			slices.Delete(tasks, i, i+1)
+			break
+		}
 	}
-	return nil
+
+	fmt.Println("Choose child task.")
+	childTask, err := searcher.Search(tasks, models.RenderTask)
+	if err != nil {
+		return err
+	}
+	fmt.Println(">", childTask.Title)
+
+	return db.Link(parentTask.ID, childTask.ID)
 }
 
 func new(ctx *cli.Context, db *database.Database) error {
@@ -134,9 +155,7 @@ func search(ctx *cli.Context, db *database.Database) error {
 		return nil
 	}
 
-	selectedTask, err := searcher.Search[models.Task](tasks, func(task models.Task) string {
-		return task.Title
-	})
+	selectedTask, err := searcher.Search[models.Task](tasks, models.RenderTask)
 	if err != nil {
 		return err
 	}

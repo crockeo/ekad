@@ -11,3 +11,7 @@ type Task struct {
 	Title     string
 	DeletedAt *time.Time
 }
+
+func RenderTask(task Task) string {
+	return task.Title
+}

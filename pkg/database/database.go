@@ -33,6 +33,30 @@ func (db *Database) Migrate() error {
 	return applyPendingMigrations(db.inner)
 }
 
+// Link links together two tasks, such that
+// the task belonging to parentID is marked as depending on
+// the task belonging to childID.
+func (db *Database) Link(parentID uuid.UUID, childID uuid.UUID) error {
+	// TODO: before we commit this, make sure that we're not creating a cycle in our tasks
+	_, err := db.inner.Exec(
+		`
+		INSERT OR REPLACE INTO task_links (
+			parent_id,
+			child_id
+		) VALUES (
+			?,
+			?
+		)
+		`,
+		parentID,
+		childID,
+	)
+	if err != nil {
+		return fmt.Errorf("Failed to connect task parent %s -> %s child: %w", parentID.String(), childID.String(), err)
+	}
+	return nil
+}
+
 func (db *Database) Delete(id uuid.UUID) error {
 	now := time.Now()
 	result, err := db.inner.Exec(
