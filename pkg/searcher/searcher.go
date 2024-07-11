@@ -58,14 +58,15 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 		if err != nil {
 			return nil, err
 		}
+		if cmd == linereader.CommandExit && len(ranks) > 0 {
+			break
+		}
 
 		ranks = fuzzy.RankFindNormalizedFold(input, targets)
 		if len(ranks) > 0 && selected >= len(ranks) {
 			selected = len(ranks) - 1
 		}
-		if cmd == linereader.CommandExit && len(ranks) > 0 {
-			break
-		} else if cmd == linereader.CommandUp && selected > 0 {
+		if cmd == linereader.CommandUp && selected > 0 {
 			selected -= 1
 		} else if cmd == linereader.CommandDown && selected < len(ranks)-1 {
 			selected += 1
