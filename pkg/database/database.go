@@ -42,6 +42,8 @@ func (db *Database) Children(id uuid.UUID) ([]models.Task, error) {
 		INNER JOIN task_links
 		  ON tasks.id = task_links.child_id
 		WHERE task_links.parent_id = ?
+		  AND tasks.completed_at IS NULL
+		  AND tasks.deleted_at IS NULL
 		`,
 		id.String(),
 	)

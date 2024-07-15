@@ -244,11 +244,18 @@ func link(ctx *cli.Context, db *database.Database) error {
 }
 
 func new(ctx *cli.Context, db *database.Database) error {
+	title := strings.Join(ctx.Args().Slice(), " ")
+	title = strings.TrimSpace(title)
+	if title == "" {
+		fmt.Println("Cannot make task with empty name.")
+		return nil
+	}
+
 	id, err := uuid.NewV7()
 	if err != nil {
 		return err
 	}
-	task := models.Task{ID: id, Title: strings.Join(ctx.Args().Slice(), " ")}
+	task := models.Task{ID: id, Title: title}
 	if err := db.Upsert(task); err != nil {
 		return err
 	}
