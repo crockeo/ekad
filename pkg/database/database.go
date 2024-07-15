@@ -180,6 +180,34 @@ func (db *Database) Goals() ([]models.Task, error) {
 	return scanTasks(rows)
 }
 
+func (db *Database) Inbox() ([]models.Task, error) {
+	rows, err := db.inner.Query(
+		`
+		SELECT
+			tasks.id,
+			tasks.title,
+			tasks.completed_at,
+			tasks.deleted_at
+		FROM tasks
+		WHERE tasks.completed_at IS NULL
+		  AND tasks.deleted_at IS NULL
+		  AND tasks.id NOT IN (
+		  	SELECT parent_id
+		  	FROM task_links
+
+		  	UNION
+
+		  	SELECT child_id
+		  	FROM task_links
+		  )
+		`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to query inbox from the database: %w", err)
+	}
+	return scanTasks(rows)
+}
+
 // Link links together two tasks, such that
 // the task belonging to parentID is marked as depending on
 // the task belonging to childID.

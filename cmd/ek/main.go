@@ -61,6 +61,14 @@ func mainImpl() error {
 				},
 			},
 			{
+				Name:    "inbox",
+				Aliases: []string{"i"},
+				Usage:   "Show floating tasks with no parent or child",
+				Action: func(ctx *cli.Context) error {
+					return inbox(ctx, db)
+				},
+			},
+			{
 				Name:    "kids",
 				Aliases: []string{"k"},
 				Usage:   "List the active children of a task",
@@ -159,6 +167,17 @@ func goals(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
+func inbox(ctx *cli.Context, db *database.Database) error {
+	inbox, err := db.Inbox()
+	if err != nil {
+		return err
+	}
+	for _, task := range inbox {
+		fmt.Println(task.Title)
+	}
+	return nil
+}
+
 func kids(ctx *cli.Context, db *database.Database) error {
 	tasks, err := db.GetAll()
 	if err != nil {
@@ -200,6 +219,9 @@ func link(ctx *cli.Context, db *database.Database) error {
 		return err
 	}
 	fmt.Println(">", parentTask.Title)
+
+	// TODO: also remove every item which is *already* linked from parentTask,
+	// since it doesn't make any sense to re-link it
 
 	// We don't want to let someone choose the same task twice,
 	// so we remove the task we have already selected
