@@ -53,6 +53,22 @@ func mainImpl() error {
 				},
 			},
 			{
+				Name:    "goals",
+				Aliases: []string{"g"},
+				Usage:   "Show active goals",
+				Action: func(ctx *cli.Context) error {
+					return goals(ctx, db)
+				},
+			},
+			{
+				Name:    "kids",
+				Aliases: []string{"k"},
+				Usage:   "List the active children of a task",
+				Action: func(ctx *cli.Context) error {
+					return kids(ctx, db)
+				},
+			},
+			{
 				Name:    "link",
 				Aliases: []string{"l"},
 				Usage:   "Link two tasks togther",
@@ -132,6 +148,42 @@ func delete(ctx *cli.Context, db *database.Database) error {
 	return db.Delete(uuid)
 }
 
+func goals(ctx *cli.Context, db *database.Database) error {
+	goals, err := db.Goals()
+	if err != nil {
+		return err
+	}
+	for _, goal := range goals {
+		fmt.Println(goal.Title)
+	}
+	return nil
+}
+
+func kids(ctx *cli.Context, db *database.Database) error {
+	tasks, err := db.GetAll()
+	if err != nil {
+		return nil
+	}
+	if len(tasks) == 0 {
+		fmt.Println("Not enough tasks to link.")
+		return nil
+	}
+
+	task, err := searcher.Search[models.Task](tasks, models.RenderTask)
+	if err != nil {
+		return err
+	}
+
+	children, err := db.Children(task.ID)
+	if err != nil {
+		return err
+	}
+	for _, child := range children {
+		fmt.Println(child.Title)
+	}
+	return nil
+}
+
 func link(ctx *cli.Context, db *database.Database) error {
 	tasks, err := db.GetAll()
 	if err != nil {
@@ -139,6 +191,7 @@ func link(ctx *cli.Context, db *database.Database) error {
 	}
 	if len(tasks) <= 1 {
 		fmt.Println("Not enough tasks to link.")
+		return nil
 	}
 
 	fmt.Println("Choose parent task.")
@@ -152,7 +205,7 @@ func link(ctx *cli.Context, db *database.Database) error {
 	// so we remove the task we have already selected
 	// from the set of all tasks.
 	for i, task := range tasks {
-		if task == *parentTask {
+		if task == parentTask {
 			slices.Delete(tasks, i, i+1)
 			break
 		}

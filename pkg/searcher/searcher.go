@@ -10,12 +10,14 @@ import (
 
 // Search performs a command-line search of the provided items
 // by fuzzy-finding their rendered contents.
-func Search[T any](items []T, renderer func(T) string) (*T, error) {
+func Search[T any](items []T, renderer func(T) string) (T, error) {
 	// Depending on how well this performs when I have many more potential entries,
 	// instead consider something that runs in-SQLite, like spellfix1 and FTS4
 	//
 	// https://www.sqlite.org/spellfix1.html
 	// https://www.sqlite.org/fts3.html
+	var empty T
+
 	selected := 0
 	targets := make([]string, len(items))
 	for i, item := range items {
@@ -24,13 +26,13 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 
 	lineReader, err := linereader.New("> ")
 	if err != nil {
-		return nil, err
+		return empty, err
 	}
 	defer lineReader.Close()
 
 	origPos, err := prepareSearchSpace(len(items) + 1)
 	if err != nil {
-		return nil, err
+		return empty, err
 	}
 	terminal.SetCursorPos(origPos)
 
@@ -56,7 +58,7 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 		})
 		input, cmd, err := lineReader.Read()
 		if err != nil {
-			return nil, err
+			return empty, err
 		}
 		if cmd == linereader.CommandExit && len(ranks) > 0 {
 			break
@@ -83,7 +85,7 @@ func Search[T any](items []T, renderer func(T) string) (*T, error) {
 	})
 
 	selectedRank := ranks[selected]
-	return &items[selectedRank.OriginalIndex], nil
+	return items[selectedRank.OriginalIndex], nil
 }
 
 // prepareSearchSpace ensures that there is enough vertical space available to perform searching

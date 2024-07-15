@@ -33,6 +33,24 @@ func (db *Database) Migrate() error {
 	return applyPendingMigrations(db.inner)
 }
 
+func (db *Database) Children(id uuid.UUID) ([]models.Task, error) {
+	// TODO: make this all transitive children https://www.sqlite.org/lang_with.html
+	rows, err := db.inner.Query(
+		`
+		SELECT tasks.*
+		FROM tasks
+		INNER JOIN task_links
+		  ON tasks.id = task_links.child_id
+		WHERE task_links.parent_id = ?
+		`,
+		id.String(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return scanTasks(rows)
+}
+
 func (db *Database) Complete(id uuid.UUID) error {
 	now := time.Now()
 	result, err := db.inner.Exec(
@@ -123,21 +141,43 @@ func (db *Database) GetAll() ([]models.Task, error) {
 	if err != nil {
 		return nil, err
 	}
+	return scanTasks(rows)
+}
 
-	tasks := []models.Task{}
-	var task models.Task
-	for rows.Next() {
-		if err := rows.Scan(
-			&task.ID,
-			&task.Title,
-			&task.CompletedAt,
-			&task.DeletedAt,
-		); err != nil {
-			return nil, fmt.Errorf("Failed to get all tasks: %w", err)
-		}
-		tasks = append(tasks, task)
+func (db *Database) Goals() ([]models.Task, error) {
+	// TODO: at some point see if i can make this less shit :)
+	rows, err := db.inner.Query(
+		`
+		SELECT
+			tasks.id,
+			tasks.title,
+			tasks.completed_at,
+			tasks.deleted_at
+		FROM tasks
+		WHERE tasks.completed_at is NULL
+		  AND tasks.deleted_at is NULL
+		  AND tasks.id IN (
+			SELECT task_links.parent_id
+			FROM task_links
+			INNER JOIN tasks
+			  ON tasks.id = task_links.parent_id
+			WHERE tasks.completed_at IS NULL
+			  AND tasks.deleted_at IS NULL
+		  )
+		  AND tasks.id NOT IN (
+			SELECT task_links.child_id
+			FROM task_links
+			INNER JOIN tasks
+			  ON tasks.id = task_links.child_id
+			WHERE tasks.completed_at IS NULL
+			  AND tasks.deleted_at IS NULL
+		  )
+		`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to query goals from the database: %w", err)
 	}
-	return tasks, nil
+	return scanTasks(rows)
 }
 
 // Link links together two tasks, such that
@@ -198,4 +238,22 @@ func (db *Database) Upsert(task models.Task) error {
 		return fmt.Errorf("Failed to upsert task: %w", err)
 	}
 	return err
+}
+
+// scanTasks scans a set of rows into an array of models.Tasks.
+func scanTasks(rows *sql.Rows) ([]models.Task, error) {
+	tasks := []models.Task{}
+	var task models.Task
+	for rows.Next() {
+		if err := rows.Scan(
+			&task.ID,
+			&task.Title,
+			&task.CompletedAt,
+			&task.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
 }
