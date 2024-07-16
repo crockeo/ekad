@@ -34,18 +34,32 @@ func (db *Database) Migrate() error {
 }
 
 func (db *Database) Children(id uuid.UUID) ([]models.Task, error) {
-	// TODO: make this all transitive children https://www.sqlite.org/lang_with.html
 	rows, err := db.inner.Query(
 		`
-		SELECT tasks.*
-		FROM tasks
-		INNER JOIN task_links
-		  ON tasks.id = task_links.child_id
-		WHERE task_links.parent_id = ?
-		  AND tasks.completed_at IS NULL
-		  AND tasks.deleted_at IS NULL
+        WITH
+          RECURSIVE task_graph(parent_id, current_id) AS (
+            VALUES (NULL, '0190b1e6-d50b-7bee-aa45-e0a57b8f8977')
+
+            UNION
+
+            SELECT
+              task_graph.current_id,
+              task_links.child_id
+            FROM task_graph
+            INNER JOIN task_links
+              ON task_graph.current_id = task_links.parent_id
+          )
+
+        SELECT DISTINCT tasks.*
+        FROM tasks
+        INNER JOIN task_graph
+          ON tasks.id = task_graph.current_id
+        WHERE tasks.id <> ?
+          AND tasks.completed_at IS NULL
+          AND tasks.deleted_at IS NULL
 		`,
-		id.String(),
+		id,
+		id,
 	)
 	if err != nil {
 		return nil, err
@@ -291,7 +305,7 @@ func (db *Database) Todo(id uuid.UUID) ([]models.Task, error) {
               ON task_graph.current_id = task_links.parent_id
           )
 
-        SELECT tasks.*
+        SELECT DISTINCT tasks.*
         FROM tasks
         INNER JOIN task_graph
           ON tasks.id = task_graph.current_id
