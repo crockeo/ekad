@@ -135,7 +135,19 @@ func all(ctx *cli.Context, db *database.Database) error {
 
 func complete(ctx *cli.Context, db *database.Database) error {
 	id := ctx.Args().Get(0)
-	if id == "" {
+
+	var task models.Task
+	if id != "" {
+		uuid, err := uuid.Parse(id)
+		if err != nil {
+			return err
+		}
+		foundTask, err := db.Get(uuid)
+		if err != nil {
+			return err
+		}
+		task = foundTask
+	} else {
 		tasks, err := db.GetAll()
 		if err != nil {
 			return err
@@ -145,18 +157,17 @@ func complete(ctx *cli.Context, db *database.Database) error {
 			return nil
 		}
 
-		task, err := searcher.Search[models.Task](tasks, models.RenderTask)
-		id = task.ID.String()
+		selectedTask, err := searcher.Search[models.Task](tasks, models.RenderTask)
+		if err != nil {
+			return err
+		}
+		task = selectedTask
 	}
 
-	uuid, err := uuid.Parse(id)
-	if err != nil {
+	if err := db.Complete(task.ID); err != nil {
 		return err
 	}
-	if err := db.Complete(uuid); err != nil {
-		return err
-	}
-	fmt.Println("Completed", id)
+	fmt.Printf("Completed `%s`\n", task.Title)
 
 	return nil
 }
