@@ -34,8 +34,17 @@ func mainImpl() error {
 	}
 
 	app := &cli.App{
-		Name: "ek",
+		Name:           "ek",
+		DefaultCommand: "all",
 		Commands: []*cli.Command{
+			{
+				Name:    "all",
+				Aliases: []string{"a"},
+				Usage:   "List all tasks",
+				Action: func(ctx *cli.Context) error {
+					return all(ctx, db)
+				},
+			},
 			{
 				Name:    "complete",
 				Aliases: []string{"c"},
@@ -111,6 +120,17 @@ func mainImpl() error {
 		},
 	}
 	return app.Run(os.Args)
+}
+
+func all(ctx *cli.Context, db *database.Database) error {
+	tasks, err := db.GetAll()
+	if err != nil {
+		return err
+	}
+	for _, task := range tasks {
+		fmt.Println(task.Title)
+	}
+	return nil
 }
 
 func complete(ctx *cli.Context, db *database.Database) error {
