@@ -9,6 +9,7 @@ import (
 type Task struct {
 	ID          uuid.UUID
 	Title       string
+	Description *string
 	CompletedAt *time.Time
 	DeletedAt   *time.Time
 }

@@ -1,0 +1,2 @@
+ALTER TABLE tasks
+ADD description VARCHAR DEFAULT NULL;

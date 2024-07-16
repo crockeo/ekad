@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"path"
 	"slices"
 	"strings"
 
@@ -115,6 +117,14 @@ func mainImpl() error {
 				Usage:   "Recursively list all actionable children of a task",
 				Action: func(ctx *cli.Context) error {
 					return todo(ctx, db)
+				},
+			},
+			{
+				Name:    "write",
+				Aliases: []string{"w"},
+				Usage:   "Write a note associated with a task",
+				Action: func(ctx *cli.Context) error {
+					return write(ctx, db)
 				},
 			},
 		},
@@ -316,7 +326,14 @@ func search(ctx *cli.Context, db *database.Database) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(selectedTask)
+	fmt.Printf("[%s] %s\n", selectedTask.ID, selectedTask.Title)
+	if selectedTask.Description != nil && *selectedTask.Description != "" {
+		fmt.Println()
+		fmt.Print(*selectedTask.Description)
+		if !strings.HasSuffix(*selectedTask.Description, "\n") {
+			fmt.Println()
+		}
+	}
 	return nil
 }
 
@@ -345,4 +362,54 @@ func todo(ctx *cli.Context, db *database.Database) error {
 	}
 
 	return nil
+}
+
+func write(ctx *cli.Context, db *database.Database) error {
+	editor, ok := os.LookupEnv("EDITOR")
+	if !ok {
+		fmt.Println("Cannot run `ek write` without an EDITOR defined.")
+		return nil
+	}
+
+	tasks, err := db.GetAll()
+	if err != nil {
+		return err
+	}
+
+	selectedTask, err := searcher.Search[models.Task](tasks, models.RenderTask)
+	if err != nil {
+		return err
+	}
+
+	dirName, err := os.MkdirTemp("", "")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dirName)
+
+	fileName := path.Join(dirName, fmt.Sprintf("%s.md", selectedTask.ID.String()))
+	var contents []byte
+	if selectedTask.Description != nil {
+		contents = []byte(*selectedTask.Description)
+	}
+	if err := os.WriteFile(fileName, contents, 0o644); err != nil {
+		return err
+	}
+
+	cmd := exec.Command(editor, fileName)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	newContentsSlice, err := os.ReadFile(fileName)
+	if err != nil {
+		return err
+	}
+	newContents := string(newContentsSlice)
+
+	selectedTask.Description = &newContents
+	return db.Upsert(selectedTask)
 }

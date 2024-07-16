@@ -36,27 +36,32 @@ func (db *Database) Migrate() error {
 func (db *Database) Children(id uuid.UUID) ([]models.Task, error) {
 	rows, err := db.inner.Query(
 		`
-        WITH
-          RECURSIVE task_graph(parent_id, current_id) AS (
-            VALUES (NULL, '0190b1e6-d50b-7bee-aa45-e0a57b8f8977')
+		WITH
+		  RECURSIVE task_graph(parent_id, current_id) AS (
+		    VALUES (NULL, '0190b1e6-d50b-7bee-aa45-e0a57b8f8977')
 
-            UNION
+		    UNION
 
-            SELECT
-              task_graph.current_id,
-              task_links.child_id
-            FROM task_graph
-            INNER JOIN task_links
-              ON task_graph.current_id = task_links.parent_id
-          )
+		    SELECT
+		      task_graph.current_id,
+		      task_links.child_id
+		    FROM task_graph
+		    INNER JOIN task_links
+		      ON task_graph.current_id = task_links.parent_id
+		  )
 
-        SELECT DISTINCT tasks.*
-        FROM tasks
-        INNER JOIN task_graph
-          ON tasks.id = task_graph.current_id
-        WHERE tasks.id <> ?
-          AND tasks.completed_at IS NULL
-          AND tasks.deleted_at IS NULL
+		SELECT DISTINCT
+		  tasks.id,
+		  tasks.title,
+		  tasks.description,
+		  tasks.created_at,
+		  tasks.deleted_at
+		FROM tasks
+		INNER JOIN task_graph
+		  ON tasks.id = task_graph.current_id
+		WHERE tasks.id <> ?
+		  AND tasks.completed_at IS NULL
+		  AND tasks.deleted_at IS NULL
 		`,
 		id,
 		id,
@@ -113,10 +118,11 @@ func (db *Database) Get(id uuid.UUID) (models.Task, error) {
 	row := db.inner.QueryRow(
 		`
 		SELECT
-			id,
-			title,
-			completed_at,
-			deleted_at
+		    id,
+		    title,
+		    description,
+		    completed_at,
+		    deleted_at
 		FROM tasks
 		WHERE id = ?
 		`,
@@ -145,13 +151,14 @@ func (db *Database) GetAll() ([]models.Task, error) {
 	rows, err := db.inner.Query(
 		`
 		SELECT
-			id,
-			title,
-			completed_at,
-			deleted_at
+		  id,
+		  title,
+		  description,
+		  completed_at,
+		  deleted_at
 		FROM tasks
-	    WHERE completed_at IS NULL
-	      AND deleted_at IS NULL
+		WHERE completed_at IS NULL
+		  AND deleted_at IS NULL
 		`,
 	)
 	if err != nil {
@@ -165,28 +172,29 @@ func (db *Database) Goals() ([]models.Task, error) {
 	rows, err := db.inner.Query(
 		`
 		SELECT
-			tasks.id,
-			tasks.title,
-			tasks.completed_at,
-			tasks.deleted_at
+		  tasks.id,
+		  tasks.title,
+		  tasks.description,
+		  tasks.completed_at,
+		  tasks.deleted_at
 		FROM tasks
 		WHERE tasks.completed_at is NULL
 		  AND tasks.deleted_at is NULL
 		  AND tasks.id IN (
-			SELECT task_links.parent_id
-			FROM task_links
-			INNER JOIN tasks
-			  ON tasks.id = task_links.parent_id
-			WHERE tasks.completed_at IS NULL
-			  AND tasks.deleted_at IS NULL
+		    SELECT task_links.parent_id
+		    FROM task_links
+		    INNER JOIN tasks
+		      ON tasks.id = task_links.parent_id
+		    WHERE tasks.completed_at IS NULL
+		      AND tasks.deleted_at IS NULL
 		  )
 		  AND tasks.id NOT IN (
-			SELECT task_links.child_id
-			FROM task_links
-			INNER JOIN tasks
-			  ON tasks.id = task_links.child_id
-			WHERE tasks.completed_at IS NULL
-			  AND tasks.deleted_at IS NULL
+		    SELECT task_links.child_id
+		    FROM task_links
+		    INNER JOIN tasks
+		      ON tasks.id = task_links.child_id
+		    WHERE tasks.completed_at IS NULL
+		      AND tasks.deleted_at IS NULL
 		  )
 		`,
 	)
@@ -200,21 +208,22 @@ func (db *Database) Inbox() ([]models.Task, error) {
 	rows, err := db.inner.Query(
 		`
 		SELECT
-			tasks.id,
-			tasks.title,
-			tasks.completed_at,
-			tasks.deleted_at
+		  tasks.id,
+		  tasks.title,
+		  tasks.description,
+		  tasks.completed_at,
+		  tasks.deleted_at
 		FROM tasks
 		WHERE tasks.completed_at IS NULL
 		  AND tasks.deleted_at IS NULL
 		  AND tasks.id NOT IN (
-		  	SELECT parent_id
-		  	FROM task_links
+		    SELECT parent_id
+		    FROM task_links
 
-		  	UNION
+		    UNION
 
-		  	SELECT child_id
-		  	FROM task_links
+		    SELECT child_id
+		    FROM task_links
 		  )
 		`,
 	)
@@ -232,11 +241,11 @@ func (db *Database) Link(parentID uuid.UUID, childID uuid.UUID) error {
 	_, err := db.inner.Exec(
 		`
 		INSERT OR REPLACE INTO task_links (
-			parent_id,
-			child_id
+		  parent_id,
+		  child_id
 		) VALUES (
-			?,
-			?
+		  ?,
+		  ?
 		)
 		`,
 		parentID,
@@ -263,19 +272,22 @@ func (db *Database) Upsert(task models.Task) error {
 	if _, err := db.inner.Exec(
 		`
 		INSERT OR REPLACE INTO tasks (
-			id,
-			title,
-			completed_at,
-			deleted_at
+		  id,
+		  title,
+		  description,
+		  completed_at,
+		  deleted_at
 		) VALUES (
-			?,
-			?,
-			?,
-			?
+		  ?,
+		  ?,
+		  ?,
+		  ?,
+		  ?
 		)
 		`,
 		task.ID.String(),
 		task.Title,
+		task.Description,
 		task.CompletedAt,
 		task.DeletedAt,
 	); err != nil {
@@ -291,29 +303,34 @@ func (db *Database) Todo(id uuid.UUID) ([]models.Task, error) {
 	// section doesn't cause this to have performance issues with large numbers of tasks
 	rows, err := db.inner.Query(
 		`
-        WITH
-          RECURSIVE task_graph(parent_id, current_id) AS (
-            VALUES (NULL, '0190b1e6-d50b-7bee-aa45-e0a57b8f8977')
+		WITH
+		  RECURSIVE task_graph(parent_id, current_id) AS (
+		    VALUES (NULL, '0190b1e6-d50b-7bee-aa45-e0a57b8f8977')
 
-            UNION
+		    UNION
 
-            SELECT
-              task_graph.current_id,
-              task_links.child_id
-            FROM task_graph
-            INNER JOIN task_links
-              ON task_graph.current_id = task_links.parent_id
-          )
+		    SELECT
+		      task_graph.current_id,
+		      task_links.child_id
+		    FROM task_graph
+		    INNER JOIN task_links
+		      ON task_graph.current_id = task_links.parent_id
+		  )
 
-        SELECT DISTINCT tasks.*
-        FROM tasks
-        INNER JOIN task_graph
-          ON tasks.id = task_graph.current_id
-        LEFT JOIN task_graph AS parent_search
-          ON tasks.id = parent_search.parent_id
-        WHERE tasks.completed_at IS NULL
-          AND tasks.deleted_at IS NULL
-          AND parent_search.parent_id IS NULL;
+		SELECT DISTINCT
+		  tasks.id,
+		  tasks.title,
+		  tasks.description,
+		  tasks.created_at,
+		  tasks.deleted_at
+		FROM tasks
+		INNER JOIN task_graph
+		  ON tasks.id = task_graph.current_id
+		LEFT JOIN task_graph AS parent_search
+		  ON tasks.id = parent_search.parent_id
+		WHERE tasks.completed_at IS NULL
+		  AND tasks.deleted_at IS NULL
+		  AND parent_search.parent_id IS NULL;
 		`,
 		id,
 	)
@@ -336,6 +353,7 @@ func scanTasks(rows *sql.Rows) ([]models.Task, error) {
 		if err := rows.Scan(
 			&task.ID,
 			&task.Title,
+			&task.Description,
 			&task.CompletedAt,
 			&task.DeletedAt,
 		); err != nil {
