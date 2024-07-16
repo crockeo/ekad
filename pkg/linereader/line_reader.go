@@ -83,7 +83,7 @@ func (lr *LineReader) Close() error {
 }
 
 func (lr *LineReader) Prompt() {
-	fmt.Print("\033[2K\r> ", string(lr.input))
+	fmt.Printf("\033[2K\r%s%s", lr.prompt, string(lr.input))
 	fmt.Printf("\033[%dG", lr.cursorPos+len(lr.prompt)+1)
 }
 
@@ -128,7 +128,7 @@ func (lr *LineReader) Read() (string, Command, error) {
 	} else if rune == CtrlE {
 		lr.cursorPos = len(lr.input)
 	} else if rune == '\r' || rune == '\n' {
-		return "", CommandExit, nil
+		return string(lr.input), CommandExit, nil
 	} else if rune < '\x20' {
 		// Intentionally ignore all other control characters,
 		// and only accept characters which are symbolic in some way.

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/crockeo/ekad/pkg/database"
+	"github.com/crockeo/ekad/pkg/linereader"
 	"github.com/crockeo/ekad/pkg/models"
 	"github.com/crockeo/ekad/pkg/searcher"
 	"github.com/google/uuid"
@@ -18,6 +19,9 @@ import (
 )
 
 // TODO: add in https://github.com/fatih/color for better visuals
+
+// TODO: in many of these tasks the logic is something like "choose a task out of a candidate set."
+// this could be abstracted out into a helper function
 
 func main() {
 	if err := mainImpl(); err != nil {
@@ -296,8 +300,16 @@ func new(ctx *cli.Context, db *database.Database) error {
 	title := strings.Join(ctx.Args().Slice(), " ")
 	title = strings.TrimSpace(title)
 	if title == "" {
-		fmt.Println("Cannot make task with empty name.")
-		return nil
+		readTitle, err := linereader.ReadLine("Title> ")
+		if err != nil {
+			return err
+		}
+		readTitle = strings.TrimSpace(readTitle)
+		if readTitle == "" {
+			fmt.Println("Cannot make task with empty name.")
+			return nil
+		}
+		title = readTitle
 	}
 
 	id, err := uuid.NewV7()
