@@ -54,7 +54,7 @@ func (db *Database) Children(id uuid.UUID) ([]models.Task, error) {
 		  tasks.id,
 		  tasks.title,
 		  tasks.description,
-		  tasks.created_at,
+		  tasks.completed_at,
 		  tasks.deleted_at
 		FROM tasks
 		INNER JOIN task_graph
@@ -321,7 +321,7 @@ func (db *Database) Todo(id uuid.UUID) ([]models.Task, error) {
 		  tasks.id,
 		  tasks.title,
 		  tasks.description,
-		  tasks.created_at,
+		  tasks.completed_at,
 		  tasks.deleted_at
 		FROM tasks
 		INNER JOIN task_graph
