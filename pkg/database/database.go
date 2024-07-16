@@ -270,6 +270,50 @@ func (db *Database) Upsert(task models.Task) error {
 	return err
 }
 
+// Todo returns all of all of the leaf nodes reachable by the provided id.
+// This corresponds to tasks related to the provided task which are actionable.
+func (db *Database) Todo(id uuid.UUID) ([]models.Task, error) {
+	// TODO: run this through a query planner to make sure the `LEFT JOIN ... AS parent_search`
+	// section doesn't cause this to have performance issues with large numbers of tasks
+	rows, err := db.inner.Query(
+		`
+        WITH
+          RECURSIVE task_graph(parent_id, current_id) AS (
+            VALUES (NULL, '0190b1e6-d50b-7bee-aa45-e0a57b8f8977')
+
+            UNION
+
+            SELECT
+              task_graph.current_id,
+              task_links.child_id
+            FROM task_graph
+            INNER JOIN task_links
+              ON task_graph.current_id = task_links.parent_id
+          )
+
+        SELECT tasks.*
+        FROM tasks
+        INNER JOIN task_graph
+          ON tasks.id = task_graph.current_id
+        LEFT JOIN task_graph AS parent_search
+          ON tasks.id = parent_search.parent_id
+        WHERE tasks.completed_at IS NULL
+          AND tasks.deleted_at IS NULL
+          AND parent_search.parent_id IS NULL;
+		`,
+		id,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to execute todo query: %w", err)
+	}
+
+	tasks, err := scanTasks(rows)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to scan todo tasks: %w", err)
+	}
+	return tasks, nil
+}
+
 // scanTasks scans a set of rows into an array of models.Tasks.
 func scanTasks(rows *sql.Rows) ([]models.Task, error) {
 	tasks := []models.Task{}

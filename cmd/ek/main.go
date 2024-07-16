@@ -100,6 +100,14 @@ func mainImpl() error {
 					return search(ctx, db)
 				},
 			},
+			{
+				Name:    "todo",
+				Aliases: []string{"t"},
+				Usage:   "Recursively list all actionable children of a task",
+				Action: func(ctx *cli.Context) error {
+					return todo(ctx, db)
+				},
+			},
 		},
 	}
 	return app.Run(os.Args)
@@ -278,5 +286,32 @@ func search(ctx *cli.Context, db *database.Database) error {
 		return err
 	}
 	fmt.Println(selectedTask)
+	return nil
+}
+
+func todo(ctx *cli.Context, db *database.Database) error {
+	tasks, err := db.GetAll()
+	if err != nil {
+		return err
+	}
+	if len(tasks) == 0 {
+		fmt.Println("No tasks.")
+		return nil
+	}
+
+	selectedTask, err := searcher.Search[models.Task](tasks, models.RenderTask)
+	if err != nil {
+		return err
+	}
+
+	todoTasks, err := db.Todo(selectedTask.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, task := range todoTasks {
+		fmt.Println(task.Title)
+	}
+
 	return nil
 }
