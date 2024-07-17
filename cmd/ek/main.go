@@ -30,7 +30,7 @@ func main() {
 }
 
 func mainImpl() error {
-	db, err := database.Open("./.tmp/db.sql")
+	db, err := database.OpenSQLite("./.tmp/db.sql")
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func mainImpl() error {
 	return app.Run(os.Args)
 }
 
-func all(ctx *cli.Context, db *database.Database) error {
+func all(ctx *cli.Context, db database.Database) error {
 	tasks, err := db.GetAll()
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func all(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func complete(ctx *cli.Context, db *database.Database) error {
+func complete(ctx *cli.Context, db database.Database) error {
 	id := ctx.Args().Get(0)
 
 	var task models.Task
@@ -186,7 +186,7 @@ func complete(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func delete(ctx *cli.Context, db *database.Database) error {
+func delete(ctx *cli.Context, db database.Database) error {
 	id := ctx.Args().Get(0)
 	if id == "" {
 		tasks, err := db.GetAll()
@@ -209,7 +209,7 @@ func delete(ctx *cli.Context, db *database.Database) error {
 	return db.Delete(uuid)
 }
 
-func goals(ctx *cli.Context, db *database.Database) error {
+func goals(ctx *cli.Context, db database.Database) error {
 	goals, err := db.Goals()
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func goals(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func inbox(ctx *cli.Context, db *database.Database) error {
+func inbox(ctx *cli.Context, db database.Database) error {
 	inbox, err := db.Inbox()
 	if err != nil {
 		return err
@@ -231,7 +231,7 @@ func inbox(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func kids(ctx *cli.Context, db *database.Database) error {
+func kids(ctx *cli.Context, db database.Database) error {
 	tasks, err := db.GetAll()
 	if err != nil {
 		return nil
@@ -256,7 +256,7 @@ func kids(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func link(ctx *cli.Context, db *database.Database) error {
+func link(ctx *cli.Context, db database.Database) error {
 	tasks, err := db.GetAll()
 	if err != nil {
 		return nil
@@ -296,7 +296,7 @@ func link(ctx *cli.Context, db *database.Database) error {
 	return db.Link(parentTask.ID, childTask.ID)
 }
 
-func new(ctx *cli.Context, db *database.Database) error {
+func new(ctx *cli.Context, db database.Database) error {
 	title := strings.Join(ctx.Args().Slice(), " ")
 	title = strings.TrimSpace(title)
 	if title == "" {
@@ -324,7 +324,7 @@ func new(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func search(ctx *cli.Context, db *database.Database) error {
+func search(ctx *cli.Context, db database.Database) error {
 	tasks, err := db.GetAll()
 	if err != nil {
 		return err
@@ -349,7 +349,7 @@ func search(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func todo(ctx *cli.Context, db *database.Database) error {
+func todo(ctx *cli.Context, db database.Database) error {
 	tasks, err := db.GetAll()
 	if err != nil {
 		return err
@@ -376,7 +376,7 @@ func todo(ctx *cli.Context, db *database.Database) error {
 	return nil
 }
 
-func write(ctx *cli.Context, db *database.Database) error {
+func write(ctx *cli.Context, db database.Database) error {
 	editor, ok := os.LookupEnv("EDITOR")
 	if !ok {
 		fmt.Println("Cannot run `ek write` without an EDITOR defined.")
