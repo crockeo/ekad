@@ -108,6 +108,14 @@ func mainImpl() error {
 				},
 			},
 			{
+				Name:    "rename",
+				Aliases: []string{"r"},
+				Usage:   "Rename a task",
+				Action: func(ctx *cli.Context) error {
+					return rename(ctx, db)
+				},
+			},
+			{
 				Name:    "search",
 				Aliases: []string{"s"},
 				Usage:   "Search for an existing task by its title",
@@ -321,6 +329,37 @@ func new(ctx *cli.Context, db database.Database) error {
 		return err
 	}
 	fmt.Println("Created task", task)
+	return nil
+}
+
+func rename(ctx *cli.Context, db database.Database) error {
+	tasks, err := db.GetAll()
+	if err != nil {
+		return err
+	}
+	if len(tasks) == 0 {
+		fmt.Println("No tasks.")
+		return nil
+	}
+
+	selectedTask, err := searcher.Search[models.Task](tasks, models.RenderTask)
+	if err != nil {
+		return err
+	}
+
+	title, err := linereader.ReadLine("> ")
+	if err != nil {
+		return err
+	}
+
+	originalTitle := selectedTask.Title
+	selectedTask.Title = title
+
+	if err := db.Upsert(selectedTask); err != nil {
+		return err
+	}
+
+	fmt.Printf("Renamed `%s` to `%s`\n", originalTitle, title)
 	return nil
 }
 
