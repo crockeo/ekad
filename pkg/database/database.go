@@ -80,6 +80,10 @@ type Database interface {
 	// this should return `ErrMissingTask`.
 	Todo(id uuid.UUID) ([]models.Task, error)
 
+	// Unlinks removes a link between the task belonging to `parentID`
+	// and the task belonging to `childID`.
+	Unlink(parentID uuid.UUID, childID uuid.UUID) error
+
 	// Upsert inserts or replaces the provided task in the database.
 	Upsert(task models.Task) error
 }

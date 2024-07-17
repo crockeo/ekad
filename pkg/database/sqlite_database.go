@@ -15,23 +15,23 @@ var (
 	ErrFailedToCreate = errors.New("Failed to create database")
 )
 
-type SQLiteDtabase struct {
+type SQLiteDatabase struct {
 	inner *sql.DB
 }
 
-func OpenSQLite(path string) (*SQLiteDtabase, error) {
+func OpenSQLite(path string) (*SQLiteDatabase, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrFailedToCreate, err)
 	}
-	return &SQLiteDtabase{db}, nil
+	return &SQLiteDatabase{db}, nil
 }
 
-func (db *SQLiteDtabase) Migrate() error {
+func (db *SQLiteDatabase) Migrate() error {
 	return applyPendingMigrations(db.inner)
 }
 
-func (db *SQLiteDtabase) Children(id uuid.UUID) ([]models.Task, error) {
+func (db *SQLiteDatabase) Children(id uuid.UUID) ([]models.Task, error) {
 	rows, err := db.inner.Query(
 		`
 		WITH
@@ -70,7 +70,7 @@ func (db *SQLiteDtabase) Children(id uuid.UUID) ([]models.Task, error) {
 	return scanTasks(rows)
 }
 
-func (db *SQLiteDtabase) Complete(id uuid.UUID) error {
+func (db *SQLiteDatabase) Complete(id uuid.UUID) error {
 	now := time.Now()
 	result, err := db.inner.Exec(
 		"UPDATE tasks SET completed_at = ? WHERE id = ?",
@@ -90,7 +90,7 @@ func (db *SQLiteDtabase) Complete(id uuid.UUID) error {
 	return nil
 }
 
-func (db *SQLiteDtabase) Delete(id uuid.UUID) error {
+func (db *SQLiteDatabase) Delete(id uuid.UUID) error {
 	now := time.Now()
 	result, err := db.inner.Exec(
 		"UPDATE tasks SET deleted_at = ? WHERE id = ?",
@@ -112,7 +112,7 @@ func (db *SQLiteDtabase) Delete(id uuid.UUID) error {
 
 // Get retrieves a Task from the database with the provided ID.
 // If the UUID is invalid, or there is no
-func (db *SQLiteDtabase) Get(id uuid.UUID) (models.Task, error) {
+func (db *SQLiteDatabase) Get(id uuid.UUID) (models.Task, error) {
 	row := db.inner.QueryRow(
 		`
 		SELECT
@@ -145,7 +145,7 @@ func (db *SQLiteDtabase) Get(id uuid.UUID) (models.Task, error) {
 
 // GetAll returns the total set of Tasks in the database.
 // This is useful when one wants to perform a search over all possible tasks.
-func (db *SQLiteDtabase) GetAll() ([]models.Task, error) {
+func (db *SQLiteDatabase) GetAll() ([]models.Task, error) {
 	rows, err := db.inner.Query(
 		`
 		SELECT
@@ -165,7 +165,7 @@ func (db *SQLiteDtabase) GetAll() ([]models.Task, error) {
 	return scanTasks(rows)
 }
 
-func (db *SQLiteDtabase) Goals() ([]models.Task, error) {
+func (db *SQLiteDatabase) Goals() ([]models.Task, error) {
 	// TODO: at some point see if i can make this less shit :)
 	rows, err := db.inner.Query(
 		`
@@ -202,7 +202,7 @@ func (db *SQLiteDtabase) Goals() ([]models.Task, error) {
 	return scanTasks(rows)
 }
 
-func (db *SQLiteDtabase) Inbox() ([]models.Task, error) {
+func (db *SQLiteDatabase) Inbox() ([]models.Task, error) {
 	rows, err := db.inner.Query(
 		`
 		SELECT
@@ -234,7 +234,7 @@ func (db *SQLiteDtabase) Inbox() ([]models.Task, error) {
 // Link links together two tasks, such that
 // the task belonging to parentID is marked as depending on
 // the task belonging to childID.
-func (db *SQLiteDtabase) Link(parentID uuid.UUID, childID uuid.UUID) error {
+func (db *SQLiteDatabase) Link(parentID uuid.UUID, childID uuid.UUID) error {
 	// TODO: before we commit this, make sure that we're not creating a cycle in our tasks
 	_, err := db.inner.Exec(
 		`
@@ -259,7 +259,7 @@ func (db *SQLiteDtabase) Link(parentID uuid.UUID, childID uuid.UUID) error {
 // The `task` must at least have its `uuid` populated.
 // All columns will be replaced with the contents of the Task,
 // even if they are empty.
-func (db *SQLiteDtabase) Upsert(task models.Task) error {
+func (db *SQLiteDatabase) Upsert(task models.Task) error {
 	renderedUUID := task.ID.String()
 	if renderedUUID == "" {
 		return ErrInvalidID
@@ -296,14 +296,14 @@ func (db *SQLiteDtabase) Upsert(task models.Task) error {
 
 // Todo returns all of all of the leaf nodes reachable by the provided id.
 // This corresponds to tasks related to the provided task which are actionable.
-func (db *SQLiteDtabase) Todo(id uuid.UUID) ([]models.Task, error) {
+func (db *SQLiteDatabase) Todo(id uuid.UUID) ([]models.Task, error) {
 	// TODO: run this through a query planner to make sure the `LEFT JOIN ... AS parent_search`
 	// section doesn't cause this to have performance issues with large numbers of tasks
 	rows, err := db.inner.Query(
 		`
 		WITH
 		  RECURSIVE task_graph(parent_id, current_id) AS (
-		    VALUES (NULL, '0190b1e6-d50b-7bee-aa45-e0a57b8f8977')
+		    VALUES (NULL, ?)
 
 		    UNION
 
@@ -341,6 +341,20 @@ func (db *SQLiteDtabase) Todo(id uuid.UUID) ([]models.Task, error) {
 		return nil, fmt.Errorf("Failed to scan todo tasks: %w", err)
 	}
 	return tasks, nil
+}
+
+func (db *SQLiteDatabase) Unlink(parentID uuid.UUID, childID uuid.UUID) error {
+	_, err := db.inner.Exec(
+		`
+		DELETE
+		FROM task_links
+		WHERE parent_id = ?
+		  AND child_id = ?
+		`,
+		parentID,
+		childID,
+	)
+	return err
 }
 
 // scanTasks scans a set of rows into an array of models.Tasks.

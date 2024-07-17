@@ -132,6 +132,14 @@ func mainImpl() error {
 				},
 			},
 			{
+				Name:    "unlink",
+				Aliases: []string{"u"},
+				Usage:   "Unlink two tasks",
+				Action: func(ctx *cli.Context) error {
+					return unlink(ctx, db)
+				},
+			},
+			{
 				Name:    "write",
 				Aliases: []string{"w"},
 				Usage:   "Write a note associated with a task",
@@ -413,6 +421,45 @@ func todo(ctx *cli.Context, db database.Database) error {
 	}
 
 	return nil
+}
+
+func unlink(ctx *cli.Context, db database.Database) error {
+	// TODO: for each of these "select a task" pieces here
+	// limit them to only the set of things which can be
+	tasks, err := db.GetAll()
+	if err != nil {
+		return err
+	}
+	if len(tasks) <= 1 {
+		fmt.Println("Not enough tasks.")
+		return nil
+	}
+
+	fmt.Println("Choose parent task.")
+	parentTask, err := searcher.Search[models.Task](tasks, models.RenderTask)
+	if err != nil {
+		return err
+	}
+	fmt.Println(">", parentTask.Title)
+
+	// We don't want to let someone choose the same task twice,
+	// so we remove the task we have already selected
+	// from the set of all tasks.
+	for i, task := range tasks {
+		if task == parentTask {
+			slices.Delete(tasks, i, i+1)
+			break
+		}
+	}
+
+	fmt.Println("Choose child task.")
+	childTask, err := searcher.Search(tasks, models.RenderTask)
+	if err != nil {
+		return err
+	}
+	fmt.Println(">", childTask.Title)
+
+	return db.Unlink(parentTask.ID, childTask.ID)
 }
 
 func write(ctx *cli.Context, db database.Database) error {
