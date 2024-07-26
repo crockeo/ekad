@@ -21,6 +21,9 @@ const LIGHT_COLOR: Color = Color {
 pub struct GraphViewer {
     circles: Vec<Circle>,
     mouse_position: Point,
+
+    // TODO: generalize this into some kind of gesture system
+    start_circle: Option<usize>,
 }
 
 impl GraphViewer {
@@ -54,14 +57,40 @@ impl GraphViewer {
         true
     }
 
+    // TODO: draw preview when
+    // - making a new circle
+    // - making a new connection
+    // - making a new circle with a new connection at the same time
     pub fn mouse_pressed(&mut self) {
-        println!("pressed!");
+        if let Some(circle) = self.hovered_circle() {
+            self.start_circle = Some(circle);
+        }
     }
 
     pub fn mouse_released(&mut self) {
-        println!("released!");
-        self.circles
-            .push(Circle::new(self.mouse_position.clone(), 40.0));
+        let target_circle = if let Some(circle) = self.hovered_circle() {
+            circle
+        } else {
+            self.circles
+                .push(Circle::new(self.mouse_position.clone(), 40.0));
+            self.circles.len() - 1
+        };
+
+        if let Some(start_circle) = self.start_circle {
+            // TODO: make a connection from start_circle -> target_circle
+            println!("Make connection between {start_circle} -> {target_circle}");
+        }
+    }
+
+    fn hovered_circle(&self) -> Option<usize> {
+        // TODO: this should be something like a quadtree
+        // to scale out better when we have more elements on the screen
+        for (i, circle) in self.circles.iter().enumerate() {
+            if in_circle(&self.mouse_position, circle) {
+                return Some(i);
+            }
+        }
+        None
     }
 }
 
