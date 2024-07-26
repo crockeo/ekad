@@ -4,7 +4,7 @@
 use anyhow::Result;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use vello::kurbo::{Affine, Circle, Ellipse, Line, RoundedRect, Stroke};
+use vello::kurbo::{Affine, Circle, Ellipse, Line, Point, RoundedRect, Stroke};
 use vello::peniko::Color;
 use vello::util::{RenderContext, RenderSurface};
 use vello::wgpu;
@@ -43,6 +43,9 @@ struct SimpleVelloApp<'s> {
     // description a scene to be drawn (with paths, fills, images, text, etc)
     // which is then passed to a renderer for rendering
     scene: Scene,
+
+    // The mouse current position.
+    mouse_position: Point,
 }
 
 impl<'s> ApplicationHandler for SimpleVelloApp<'s> {
@@ -119,7 +122,7 @@ impl<'s> ApplicationHandler for SimpleVelloApp<'s> {
                 self.scene.reset();
 
                 // Re-add the objects to draw to the scene.
-                add_shapes_to_scene(&mut self.scene);
+                add_shapes_to_scene(&self.mouse_position, &mut self.scene);
 
                 // Get the RenderSurface (surface + config)
                 let surface = &render_state.surface;
@@ -160,6 +163,21 @@ impl<'s> ApplicationHandler for SimpleVelloApp<'s> {
 
                 device_handle.device.poll(wgpu::Maintain::Poll);
             }
+
+            WindowEvent::CursorMoved {
+                device_id,
+                position,
+            } => {
+                let circle = Circle::new((420.0, 200.0), 120.0);
+                let new_position = Point::new(position.x, position.y);
+                let changed_hover =
+                    in_circle(&self.mouse_position, &circle) != in_circle(&new_position, &circle);
+                self.mouse_position = new_position;
+                if changed_hover {
+                    render_state.window.request_redraw();
+                }
+            }
+
             _ => {}
         }
     }
@@ -172,6 +190,7 @@ fn main() -> Result<()> {
         renderers: vec![],
         state: RenderState::Suspended(None),
         scene: Scene::new(),
+        mouse_position: Default::default(),
     };
 
     // Create and run a winit event loop
@@ -207,7 +226,7 @@ fn create_vello_renderer(render_cx: &RenderContext, surface: &RenderSurface) -> 
 
 /// Add shapes to a vello scene. This does not actually render the shapes, but adds them
 /// to the Scene data structure which represents a set of objects to draw.
-fn add_shapes_to_scene(scene: &mut Scene) {
+fn add_shapes_to_scene(mouse_position: &Point, scene: &mut Scene) {
     // Draw an outlined rectangle
     let stroke = Stroke::new(6.0);
     let rect = RoundedRect::new(10.0, 10.0, 240.0, 240.0, 20.0);
@@ -216,7 +235,11 @@ fn add_shapes_to_scene(scene: &mut Scene) {
 
     // Draw a filled circle
     let circle = Circle::new((420.0, 200.0), 120.0);
-    let circle_fill_color = Color::rgb(0.9529, 0.5451, 0.6588);
+    let circle_fill_color = if in_circle(mouse_position, &circle) {
+        Color::rgb(0.9529, 0.5451, 0.6588)
+    } else {
+        Color::rgb8(210, 123, 53)
+    };
     scene.fill(
         vello::peniko::Fill::NonZero,
         Affine::IDENTITY,
@@ -240,4 +263,8 @@ fn add_shapes_to_scene(scene: &mut Scene) {
     let line = Line::new((260.0, 20.0), (620.0, 100.0));
     let line_stroke_color = Color::rgb(0.5373, 0.7059, 0.9804);
     scene.stroke(&stroke, Affine::IDENTITY, line_stroke_color, None, &line);
+}
+
+fn in_circle(point: &Point, circle: &Circle) -> bool {
+    return point.distance_squared(circle.center) < circle.radius * circle.radius;
 }
