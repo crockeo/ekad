@@ -4,6 +4,16 @@ use vello::{
     Scene,
 };
 
+// NOTE: It would be interesting to use some concept of "centrality"
+// to be the guide for what to render vs. what not to render.
+// Use that in combination with a quad tree / culling to:
+//
+// - render only things that are highly important when zoomed out
+// - draw edges between them and other things in the graph as simulated paths that exist
+// - as you zoom in, bring more and more less-important nodes in, and then get more detail
+// - but by zooming in keep the total number of nodes you're rendering below some max amount
+//   by using a quad tree / culling approach to rendering
+
 const BASE_COLOR: Color = Color {
     r: 113,
     g: 64,
