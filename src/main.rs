@@ -115,7 +115,23 @@ impl<'a> winit::application::ApplicationHandler for App<'a> {
         use winit::event::WindowEvent::*;
         match event {
             CloseRequested => event_loop.exit(),
-            RedrawRequested => self.window.as_ref().unwrap().request_redraw(),
+
+            RedrawRequested => {
+                let Some(RenderState { surface, window }) = &self.render_state else {
+                    return;
+                };
+
+                // TODO: render!
+            }
+
+            Resized(size) => {
+                if let Some(RenderState { surface, window }) = &mut self.render_state {
+                    self.render_cx
+                        .resize_surface(surface, size.width, size.height);
+                    window.request_redraw();
+                }
+            }
+
             _ => {}
         }
     }
