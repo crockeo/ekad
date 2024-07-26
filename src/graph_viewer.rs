@@ -14,6 +14,12 @@ use vello::{
 // - but by zooming in keep the total number of nodes you're rendering below some max amount
 //   by using a quad tree / culling approach to rendering
 
+// NOTE: support gestures like
+//
+// - zoom on macbook keyboard
+// - pan on macbook keyboard
+// - ???
+
 const BASE_COLOR: Color = Color {
     r: 113,
     g: 64,
