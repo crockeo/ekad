@@ -166,11 +166,7 @@ impl<'s> ApplicationHandler for SimpleVelloApp<'s> {
                 device_handle.device.poll(wgpu::Maintain::Poll);
             }
 
-            WindowEvent::MouseInput {
-                device_id,
-                state,
-                button,
-            } => {
+            WindowEvent::MouseInput { state, button, .. } => {
                 if button != MouseButton::Left {
                     return;
                 }
@@ -182,13 +178,14 @@ impl<'s> ApplicationHandler for SimpleVelloApp<'s> {
                 render_state.window.request_redraw();
             }
 
-            WindowEvent::CursorMoved {
-                device_id,
-                position,
-            } => {
+            WindowEvent::CursorLeft { .. } => {
+                self.graph_viewer.mouse_moved(None);
+            }
+
+            WindowEvent::CursorMoved { position, .. } => {
                 let requires_redraw = self
                     .graph_viewer
-                    .mouse_moved(Point::new(position.x, position.y));
+                    .mouse_moved(Some(Point::new(position.x, position.y)));
                 if requires_redraw {
                     render_state.window.request_redraw();
                 }

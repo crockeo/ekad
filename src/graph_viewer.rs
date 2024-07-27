@@ -37,7 +37,7 @@ const LIGHT_COLOR: Color = Color {
 #[derive(Default)]
 pub struct GraphViewer {
     graph: DiGraph<Circle, ()>,
-    mouse_position: Point,
+    mouse_position: Option<Point>,
 
     // TODO: generalize this into some kind of gesture system
     start_circle: Option<NodeIndex<u32>>,
@@ -70,7 +70,7 @@ impl GraphViewer {
         }
     }
 
-    pub fn mouse_moved(&mut self, new_position: Point) -> bool {
+    pub fn mouse_moved(&mut self, new_position: Option<Point>) -> bool {
         // let circle = Circle::new((420.0, 200.0), 120.0);
         // let new_position = Point::new(position.x, position.y);
         // let changed_hover =
@@ -94,11 +94,14 @@ impl GraphViewer {
     }
 
     pub fn mouse_released(&mut self) {
+        let Some(mouse_position) = &self.mouse_position else {
+            return;
+        };
         let target_circle = if let Some(circle_id) = self.hovered_circle() {
             circle_id
         } else {
             self.graph
-                .add_node(Circle::new(self.mouse_position.clone(), 40.0))
+                .add_node(Circle::new(mouse_position.clone(), 40.0))
         };
 
         if let Some(start_circle) = self.start_circle {
@@ -163,6 +166,9 @@ impl GraphViewer {
 //     scene.stroke(&stroke, Affine::IDENTITY, line_stroke_color, None, &line);
 // }
 
-fn in_circle(point: &Point, circle: &Circle) -> bool {
-    return point.distance_squared(circle.center) < circle.radius * circle.radius;
+fn in_circle(point: &Option<Point>, circle: &Circle) -> bool {
+    match point {
+        None => false,
+        Some(point) => point.distance_squared(circle.center) < circle.radius * circle.radius,
+    }
 }
