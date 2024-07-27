@@ -37,17 +37,24 @@ const LIGHT_COLOR: Color = Color {
 #[derive(Default)]
 pub struct GraphViewer {
     graph: DiGraph<Circle, ()>,
-    mouse_position: Option<Point>,
-
+    raw_mouse_position: Option<Point>,
     // TODO: generalize this into some kind of gesture system
     start_circle: Option<NodeIndex<u32>>,
+    transform: Affine,
 }
 
 impl GraphViewer {
-    pub fn add_to_scene(&self, scene: &mut Scene) {
+    pub fn add_to_scene(&self, parent_scene: &mut Scene) {
+        let mut scene = Scene::new();
         for circle_id in self.graph.node_indices() {
             let circle = &self.graph[circle_id];
-            let circle_fill_color = if in_circle(&self.mouse_position, circle) {
+
+            let is_in_circle = match self.mouse_position() {
+                None => false,
+                Some(mouse_position) => in_circle(&mouse_position, circle),
+            };
+
+            let circle_fill_color = if is_in_circle {
                 LIGHT_COLOR
             } else {
                 BASE_COLOR
@@ -68,6 +75,19 @@ impl GraphViewer {
                 scene.stroke(&stroke, Affine::IDENTITY, BASE_COLOR, None, &line);
             }
         }
+
+        if let Some(mouse_position) = self.mouse_position() {
+            let mouse_pos_circle = Circle::new(mouse_position, 10.0);
+            scene.fill(
+                vello::peniko::Fill::NonZero,
+                Affine::IDENTITY,
+                BASE_COLOR,
+                None,
+                &mouse_pos_circle,
+            );
+        };
+
+        parent_scene.append(&scene, Some(self.transform));
     }
 
     pub fn mouse_moved(&mut self, new_position: Option<Point>) -> bool {
@@ -79,7 +99,7 @@ impl GraphViewer {
         // if changed_hover {
         //     render_state.window.request_redraw();
         // }
-        self.mouse_position = new_position;
+        self.raw_mouse_position = new_position;
         true
     }
 
@@ -94,12 +114,12 @@ impl GraphViewer {
     }
 
     pub fn mouse_released(&mut self) {
-        let Some(mouse_position) = &self.mouse_position else {
-            return;
-        };
         let target_circle = if let Some(circle_id) = self.hovered_circle() {
             circle_id
         } else {
+            let Some(mouse_position) = self.mouse_position() else {
+                return;
+            };
             self.graph
                 .add_node(Circle::new(mouse_position.clone(), 40.0))
         };
@@ -111,16 +131,42 @@ impl GraphViewer {
         self.start_circle = None;
     }
 
+    pub fn scroll(&mut self, delta_x: f64, delta_y: f64) {
+        // TODO: make it feel like it scrolls by a constant rate,
+        // by multiplying the speed by the inverse of the scale of the transform?
+        // or something like that...
+        self.transform = self.transform * Affine::translate((delta_x, delta_y));
+    }
+
+    pub fn zoom(&mut self, delta: f64) {
+        self.transform = self.transform * Affine::scale(1.0 + delta);
+    }
+
     fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
         // TODO: this should be something like a quadtree
         // to scale out better when we have more elements on the screen
+        let Some(mouse_position) = self.mouse_position() else {
+            return None;
+        };
+
         for circle_id in self.graph.node_indices() {
             let circle = &self.graph[circle_id];
-            if in_circle(&self.mouse_position, circle) {
+            if in_circle(&mouse_position, circle) {
                 return Some(circle_id);
             }
         }
         None
+    }
+
+    /// Returns the in-GraphViewer position of the mouse.
+    /// This should return a Point such that,
+    /// if it were rendered into the scene,
+    /// it would appear directly below the mouse at all times.
+    fn mouse_position(&self) -> Option<Point> {
+        let Some(raw_mouse_position) = self.raw_mouse_position else {
+            return None;
+        };
+        Some(self.transform.inverse() * raw_mouse_position)
     }
 }
 
@@ -166,9 +212,6 @@ impl GraphViewer {
 //     scene.stroke(&stroke, Affine::IDENTITY, line_stroke_color, None, &line);
 // }
 
-fn in_circle(point: &Option<Point>, circle: &Circle) -> bool {
-    match point {
-        None => false,
-        Some(point) => point.distance_squared(circle.center) < circle.radius * circle.radius,
-    }
+fn in_circle(point: &Point, circle: &Circle) -> bool {
+    point.distance_squared(circle.center) < circle.radius * circle.radius
 }

@@ -13,7 +13,7 @@ use vello::util::{RenderContext, RenderSurface};
 use vello::wgpu;
 use vello::{AaConfig, Renderer, RendererOptions, Scene};
 use winit::application::ApplicationHandler;
-use winit::dpi::LogicalSize;
+use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::*;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::Window;
@@ -110,6 +110,47 @@ impl<'s> ApplicationHandler for SimpleVelloApp<'s> {
             // Exit the event loop when a close is requested (e.g. window's close button is pressed)
             WindowEvent::CloseRequested => event_loop.exit(),
 
+            WindowEvent::CursorLeft { .. } => {
+                self.graph_viewer.mouse_moved(None);
+            }
+
+            WindowEvent::CursorMoved { position, .. } => {
+                let requires_redraw = self
+                    .graph_viewer
+                    .mouse_moved(Some(Point::new(position.x, position.y)));
+                if requires_redraw {
+                    render_state.window.request_redraw();
+                }
+            }
+
+            WindowEvent::MouseInput { state, button, .. } => {
+                if button != MouseButton::Left {
+                    return;
+                }
+                if state.is_pressed() {
+                    self.graph_viewer.mouse_pressed();
+                } else {
+                    self.graph_viewer.mouse_released();
+                }
+                render_state.window.request_redraw();
+            }
+
+            WindowEvent::MouseWheel { delta, .. } => {
+                let pixels_per_line: f64 = 20.0;
+                let (dx, dy) = match delta {
+                    MouseScrollDelta::LineDelta(dx, dy) => {
+                        (dx as f64 * pixels_per_line, dy as f64 * pixels_per_line)
+                    }
+                    MouseScrollDelta::PixelDelta(PhysicalPosition { x, y }) => (x, y),
+                };
+
+                self.graph_viewer.scroll(dx, dy);
+            }
+
+            WindowEvent::PinchGesture { delta, .. } => {
+                self.graph_viewer.zoom(delta);
+            }
+
             // Resize the surface when the window is resized
             WindowEvent::Resized(size) => {
                 self.context
@@ -164,31 +205,6 @@ impl<'s> ApplicationHandler for SimpleVelloApp<'s> {
                 surface_texture.present();
 
                 device_handle.device.poll(wgpu::Maintain::Poll);
-            }
-
-            WindowEvent::MouseInput { state, button, .. } => {
-                if button != MouseButton::Left {
-                    return;
-                }
-                if state.is_pressed() {
-                    self.graph_viewer.mouse_pressed();
-                } else {
-                    self.graph_viewer.mouse_released();
-                }
-                render_state.window.request_redraw();
-            }
-
-            WindowEvent::CursorLeft { .. } => {
-                self.graph_viewer.mouse_moved(None);
-            }
-
-            WindowEvent::CursorMoved { position, .. } => {
-                let requires_redraw = self
-                    .graph_viewer
-                    .mouse_moved(Some(Point::new(position.x, position.y)));
-                if requires_redraw {
-                    render_state.window.request_redraw();
-                }
             }
 
             _ => {}
