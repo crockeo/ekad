@@ -15,12 +15,6 @@ use vello::{
 // - but by zooming in keep the total number of nodes you're rendering below some max amount
 //   by using a quad tree / culling approach to rendering
 
-// NOTE: support gestures like
-//
-// - zoom on macbook keyboard
-// - pan on macbook keyboard
-// - ???
-
 const BASE_COLOR: Color = Color {
     r: 113,
     g: 64,
@@ -76,16 +70,17 @@ impl GraphViewer {
             }
         }
 
-        if let Some(mouse_position) = self.mouse_position() {
-            let mouse_pos_circle = Circle::new(mouse_position, 10.0);
-            scene.fill(
-                vello::peniko::Fill::NonZero,
-                Affine::IDENTITY,
-                BASE_COLOR,
-                None,
-                &mouse_pos_circle,
-            );
-        };
+        // TODO: add a debug mode which will let us turn this off and on?
+        // if let Some(mouse_position) = self.mouse_position() {
+        //     let mouse_pos_circle = Circle::new(mouse_position, 10.0);
+        //     scene.fill(
+        //         vello::peniko::Fill::NonZero,
+        //         Affine::IDENTITY,
+        //         BASE_COLOR,
+        //         None,
+        //         &mouse_pos_circle,
+        //     );
+        // };
 
         parent_scene.append(&scene, Some(self.transform));
     }
