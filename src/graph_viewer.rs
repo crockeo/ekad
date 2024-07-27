@@ -1,5 +1,6 @@
+use petgraph::graph::{DiGraph, NodeIndex};
 use vello::{
-    kurbo::{Affine, Circle, Point},
+    kurbo::{Affine, Circle, Line, Point, Stroke},
     peniko::Color,
     Scene,
 };
@@ -35,21 +36,23 @@ const LIGHT_COLOR: Color = Color {
 
 #[derive(Default)]
 pub struct GraphViewer {
-    circles: Vec<Circle>,
+    graph: DiGraph<Circle, ()>,
     mouse_position: Point,
 
     // TODO: generalize this into some kind of gesture system
-    start_circle: Option<usize>,
+    start_circle: Option<NodeIndex<u32>>,
 }
 
 impl GraphViewer {
     pub fn add_to_scene(&self, scene: &mut Scene) {
-        for circle in &self.circles {
-            let circle_fill_color = if in_circle(&self.mouse_position, &circle) {
+        for circle_id in self.graph.node_indices() {
+            let circle = &self.graph[circle_id];
+            let circle_fill_color = if in_circle(&self.mouse_position, circle) {
                 LIGHT_COLOR
             } else {
                 BASE_COLOR
             };
+
             scene.fill(
                 vello::peniko::Fill::NonZero,
                 Affine::IDENTITY,
@@ -57,6 +60,13 @@ impl GraphViewer {
                 None,
                 circle,
             );
+
+            let stroke = Stroke::new(2.0);
+            for neighbor_circle_id in self.graph.neighbors(circle_id) {
+                let neighbor_circle = &self.graph[neighbor_circle_id];
+                let line = Line::new(circle.center, neighbor_circle.center);
+                scene.stroke(&stroke, Affine::IDENTITY, BASE_COLOR, None, &line);
+            }
         }
     }
 
@@ -84,26 +94,27 @@ impl GraphViewer {
     }
 
     pub fn mouse_released(&mut self) {
-        let target_circle = if let Some(circle) = self.hovered_circle() {
-            circle
+        let target_circle = if let Some(circle_id) = self.hovered_circle() {
+            circle_id
         } else {
-            self.circles
-                .push(Circle::new(self.mouse_position.clone(), 40.0));
-            self.circles.len() - 1
+            self.graph
+                .add_node(Circle::new(self.mouse_position.clone(), 40.0))
         };
 
         if let Some(start_circle) = self.start_circle {
             // TODO: make a connection from start_circle -> target_circle
-            println!("Make connection between {start_circle} -> {target_circle}");
+            self.graph.add_edge(start_circle, target_circle, ());
         }
+        self.start_circle = None;
     }
 
-    fn hovered_circle(&self) -> Option<usize> {
+    fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
         // TODO: this should be something like a quadtree
         // to scale out better when we have more elements on the screen
-        for (i, circle) in self.circles.iter().enumerate() {
+        for circle_id in self.graph.node_indices() {
+            let circle = &self.graph[circle_id];
             if in_circle(&self.mouse_position, circle) {
-                return Some(i);
+                return Some(circle_id);
             }
         }
         None
