@@ -127,10 +127,9 @@ impl GraphViewer {
     }
 
     pub fn scroll(&mut self, delta_x: f64, delta_y: f64) {
-        // TODO: make it feel like it scrolls by a constant rate,
-        // by multiplying the speed by the inverse of the scale of the transform?
-        // or something like that...
-        self.transform = self.transform * Affine::translate((delta_x, delta_y));
+        let inverse_det = self.transform.inverse().determinant();
+        self.transform =
+            self.transform * Affine::translate((delta_x * inverse_det, delta_y * inverse_det));
     }
 
     pub fn zoom(&mut self, delta: f64) {
