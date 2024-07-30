@@ -34,6 +34,10 @@ const PREVIEW_COLOR: Color = Color {
     a: 127,
 };
 
+// TODO: instead of backing this with a plain petgraph graph,
+// try to represent a graph inside of something like automerge
+// so that we can synchronize it across a network
+
 #[derive(Default)]
 pub struct GraphViewer {
     gesture: Gesture,
