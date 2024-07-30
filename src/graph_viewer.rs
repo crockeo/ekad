@@ -15,6 +15,23 @@ use vello::{
 // - but by zooming in keep the total number of nodes you're rendering below some max amount
 //   by using a quad tree / culling approach to rendering
 
+// TODO: what kinds of things are missing JUST in graph viewer
+// - Move nodes around
+// - Delete nodes
+// - Better line rendering
+//   - Level 1) Make the lines not overlap with the circles (so it looks better when hovering)
+//   - Level 2) Render arrows instead of lines (since it's a digraph)
+
+// TODO: and what kinds of stuff are an Eventually(tm) (aka: BIG!)
+// - Hook it up to storage
+//   - Preferably something like automerge.rs so it can be synchronized
+//   - Otherwise try to make it compatible with the CLI version of ekad?
+// - Define metadata around nodes to capture some basic information
+//   - Name, notes, scheduled time, etc.
+// - Add a UI around the graph viewer
+//   - See if we can use something like Xilem here and still get access to Vello renderer!
+//   - Otherwise: I guess we're writing our own UI library in Rust from scratch :)
+
 const BASE_COLOR: Color = Color {
     r: 113,
     g: 64,
@@ -33,10 +50,6 @@ const PREVIEW_COLOR: Color = Color {
     b: 237,
     a: 127,
 };
-
-// TODO: instead of backing this with a plain petgraph graph,
-// try to represent a graph inside of something like automerge
-// so that we can synchronize it across a network
 
 #[derive(Default)]
 pub struct GraphViewer {
