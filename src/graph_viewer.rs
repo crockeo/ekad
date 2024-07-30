@@ -120,7 +120,6 @@ impl GraphViewer {
         };
 
         if let Some(start_circle) = self.start_circle {
-            // TODO: make a connection from start_circle -> target_circle
             self.graph.add_edge(start_circle, target_circle, ());
         }
         self.start_circle = None;
@@ -133,7 +132,15 @@ impl GraphViewer {
     }
 
     pub fn zoom(&mut self, delta: f64) {
-        self.transform = self.transform * Affine::scale(1.0 + delta);
+        let mut scale = Affine::default();
+        if let Some(raw_mouse_position) = self.raw_mouse_position {
+            scale = scale * Affine::translate(raw_mouse_position.to_vec2());
+        }
+        scale = scale * Affine::scale(1.0 + delta);
+        if let Some(raw_mouse_position) = self.raw_mouse_position {
+            scale = scale * Affine::translate(raw_mouse_position.to_vec2()).inverse();
+        }
+        self.transform = self.transform * scale;
     }
 
     fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
