@@ -7,7 +7,7 @@ use crate::graph_viewer::GraphViewer;
 use anyhow::Result;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use vello::kurbo::{Affine, Circle, Ellipse, Line, Point, RoundedRect, Stroke};
+use vello::kurbo::Point;
 use vello::peniko::Color;
 use vello::util::{RenderContext, RenderSurface};
 use vello::wgpu;
