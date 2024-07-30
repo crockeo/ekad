@@ -132,15 +132,12 @@ impl GraphViewer {
     }
 
     pub fn zoom(&mut self, delta: f64) {
-        let mut scale = Affine::default();
-        if let Some(raw_mouse_position) = self.raw_mouse_position {
-            scale = scale * Affine::translate(raw_mouse_position.to_vec2());
-        }
-        scale = scale * Affine::scale(1.0 + delta);
-        if let Some(raw_mouse_position) = self.raw_mouse_position {
-            scale = scale * Affine::translate(raw_mouse_position.to_vec2()).inverse();
-        }
-        self.transform = self.transform * scale;
+        let Some(mouse_position) = self.mouse_position() else {
+            return;
+        };
+        let translate = Affine::translate(mouse_position.to_vec2());
+        self.transform =
+            self.transform * translate * Affine::scale(1.0 + delta) * translate.inverse();
     }
 
     fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
