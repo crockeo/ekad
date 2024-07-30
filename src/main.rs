@@ -2,6 +2,7 @@
 // from https://github.com/linebender/vello/blob/main/examples/simple/src/main.rs
 
 mod graph_viewer;
+mod shapes;
 
 use crate::graph_viewer::GraphViewer;
 use anyhow::Result;

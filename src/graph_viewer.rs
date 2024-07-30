@@ -5,6 +5,8 @@ use vello::{
     Scene,
 };
 
+use crate::shapes;
+
 // NOTE: It would be interesting to use some concept of "centrality"
 // to be the guide for what to render vs. what not to render.
 // Use that in combination with a quad tree / culling to:
@@ -18,9 +20,7 @@ use vello::{
 // TODO: what kinds of things are missing JUST in graph viewer
 // - Move nodes around
 // - Delete nodes
-// - Better line rendering
-//   - Level 1) Make the lines not overlap with the circles (so it looks better when hovering)
-//   - Level 2) Render arrows instead of lines (since it's a digraph)
+// - Make arrows not intersect with circles
 
 // TODO: and what kinds of stuff are an Eventually(tm) (aka: BIG!)
 // - Hook it up to storage
@@ -31,6 +31,10 @@ use vello::{
 // - Add a UI around the graph viewer
 //   - See if we can use something like Xilem here and still get access to Vello renderer!
 //   - Otherwise: I guess we're writing our own UI library in Rust from scratch :)
+// - If we run into performance issues:
+//   - Make some way to like """cache""" scene elements,
+//     so we don't have to re-calculate a bunch of stuff around
+//     circles and lines and stuff like that.
 
 const BASE_COLOR: Color = Color {
     r: 113,
@@ -87,8 +91,9 @@ impl GraphViewer {
             );
             for neighbor_circle_id in self.graph.neighbors(circle_id) {
                 let neighbor_circle = &self.graph[neighbor_circle_id];
-                let line = Line::new(circle.center, neighbor_circle.center);
-                scene.stroke(&line_stroke, Affine::IDENTITY, BASE_COLOR, None, &line);
+                for line in shapes::arrow(circle.center, neighbor_circle.center) {
+                    scene.stroke(&line_stroke, Affine::IDENTITY, BASE_COLOR, None, &line);
+                }
             }
         }
 
