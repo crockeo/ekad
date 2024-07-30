@@ -21,6 +21,11 @@ use crate::shapes;
 // - Move nodes around
 // - Delete nodes
 // - Make arrows not intersect with circles
+// - Abstract rendering more complex forms,
+//   so I don't have to keep on reimplementing them.
+//   Like:
+//   - Arrows (beyond just making them--also render them)
+//   - Lines between circles (abstract out the arrow part and the "draw away from radius" part)
 
 // TODO: and what kinds of stuff are an Eventually(tm) (aka: BIG!)
 // - Hook it up to storage
@@ -118,6 +123,7 @@ impl GraphViewer {
                     None,
                     &Circle::new(mouse_position, 40.0),
                 );
+                // TODO: draw this as an arrow
                 scene.stroke(
                     &line_stroke,
                     Affine::IDENTITY,
@@ -127,6 +133,7 @@ impl GraphViewer {
                 );
             }
             (_, Gesture::AddingEdge { from }, Some(to)) => {
+                // TODO: draw this as an arrow
                 scene.stroke(
                     &line_stroke,
                     Affine::IDENTITY,
