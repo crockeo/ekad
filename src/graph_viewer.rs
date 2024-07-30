@@ -1,6 +1,7 @@
+use lazy_static::lazy_static;
 use petgraph::graph::{DiGraph, NodeIndex};
 use vello::{
-    kurbo::{Affine, Circle, Line, Point, Stroke},
+    kurbo::{Affine, Circle, Point, Stroke},
     peniko::Color,
     Scene,
 };
@@ -20,12 +21,6 @@ use crate::shapes;
 // TODO: what kinds of things are missing JUST in graph viewer
 // - Move nodes around
 // - Delete nodes
-// - Make arrows not intersect with circles
-// - Abstract rendering more complex forms,
-//   so I don't have to keep on reimplementing them.
-//   Like:
-//   - Arrows (beyond just making them--also render them)
-//   - Lines between circles (abstract out the arrow part and the "draw away from radius" part)
 
 // TODO: and what kinds of stuff are an Eventually(tm) (aka: BIG!)
 // - Hook it up to storage
@@ -40,6 +35,8 @@ use crate::shapes;
 //   - Make some way to like """cache""" scene elements,
 //     so we don't have to re-calculate a bunch of stuff around
 //     circles and lines and stuff like that.
+
+const CIRCLE_RADIUS: f64 = 40.0;
 
 const BASE_COLOR: Color = Color {
     r: 113,
@@ -60,6 +57,10 @@ const PREVIEW_COLOR: Color = Color {
     a: 127,
 };
 
+lazy_static! {
+    static ref LINE_STROKE: Stroke = Stroke::new(4.0);
+}
+
 #[derive(Default)]
 pub struct GraphViewer {
     gesture: Gesture,
@@ -72,7 +73,6 @@ impl GraphViewer {
     pub fn add_to_scene(&self, parent_scene: &mut Scene) {
         let mut scene = Scene::new();
 
-        let line_stroke = Stroke::new(2.0);
         for circle_id in self.graph.node_indices() {
             let circle = &self.graph[circle_id];
 
@@ -96,9 +96,7 @@ impl GraphViewer {
             );
             for neighbor_circle_id in self.graph.neighbors(circle_id) {
                 let neighbor_circle = &self.graph[neighbor_circle_id];
-                for line in shapes::arrow(circle.center, neighbor_circle.center) {
-                    scene.stroke(&line_stroke, Affine::IDENTITY, BASE_COLOR, None, &line);
-                }
+                draw_arrow_between(&mut scene, &BASE_COLOR, circle, neighbor_circle);
             }
         }
 
@@ -112,34 +110,31 @@ impl GraphViewer {
                     Affine::IDENTITY,
                     PREVIEW_COLOR,
                     None,
-                    &Circle::new(mouse_position, 40.0),
+                    &Circle::new(mouse_position, CIRCLE_RADIUS),
                 );
             }
             (Some(mouse_position), Gesture::AddingEdge { from }, None) => {
+                let preview_circle = Circle::new(mouse_position, CIRCLE_RADIUS);
                 scene.fill(
                     vello::peniko::Fill::NonZero,
                     Affine::IDENTITY,
                     PREVIEW_COLOR,
                     None,
-                    &Circle::new(mouse_position, 40.0),
+                    &preview_circle,
                 );
-                // TODO: draw this as an arrow
-                scene.stroke(
-                    &line_stroke,
-                    Affine::IDENTITY,
-                    PREVIEW_COLOR,
-                    None,
-                    &Line::new(self.graph[from].center, mouse_position),
+                draw_arrow_between(
+                    &mut scene,
+                    &PREVIEW_COLOR,
+                    &self.graph[from],
+                    &preview_circle,
                 );
             }
             (_, Gesture::AddingEdge { from }, Some(to)) => {
-                // TODO: draw this as an arrow
-                scene.stroke(
-                    &line_stroke,
-                    Affine::IDENTITY,
-                    PREVIEW_COLOR,
-                    None,
-                    &Line::new(self.graph[from].center, self.graph[to].center),
+                draw_arrow_between(
+                    &mut scene,
+                    &PREVIEW_COLOR,
+                    &self.graph[from],
+                    &self.graph[to],
                 );
             }
         }
@@ -176,12 +171,15 @@ impl GraphViewer {
             (Gesture::AddingNode, Some(_)) => {}
             (Gesture::AddingNode, None) => {
                 if let Some(mouse_position) = mouse_position {
-                    self.graph.add_node(Circle::new(mouse_position, 40.0));
+                    self.graph
+                        .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
                 }
             }
             (Gesture::AddingEdge { from }, None) => {
                 if let Some(mouse_position) = mouse_position {
-                    let to = self.graph.add_node(Circle::new(mouse_position, 40.0));
+                    let to = self
+                        .graph
+                        .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
                     self.graph.add_edge(from, to, ());
                 }
             }
@@ -233,6 +231,15 @@ impl GraphViewer {
             return None;
         };
         Some(self.transform.inverse() * raw_mouse_position)
+    }
+}
+
+fn draw_arrow_between(scene: &mut Scene, color: &Color, from_circle: &Circle, to_circle: &Circle) {
+    let direction = (to_circle.center - from_circle.center).normalize();
+    let from = from_circle.center + direction * from_circle.radius + direction * LINE_STROKE.width;
+    let to = to_circle.center - direction * to_circle.radius - direction * LINE_STROKE.width;
+    for line in shapes::arrow(from, to) {
+        scene.stroke(&LINE_STROKE, Affine::IDENTITY, color, None, &line);
     }
 }
 

@@ -2,13 +2,16 @@ use std::f64::consts::PI;
 
 use vello::kurbo::{Line, Point, Vec2};
 
-const ARROW_ARM_LENGTH: f64 = 60.0;
+const ARROW_ARM_LENGTH: f64 = 20.0;
+const ARROW_ARM_ANGLE: f64 = 0.2 * PI;
 
 pub fn arrow(from: Point, to: Point) -> [Line; 3] {
     let backwards_direction = (from.to_vec2() - to.to_vec2()).normalize();
 
-    let clockwise_arm = to + (Mat2::rotate(0.2 * PI) * backwards_direction * ARROW_ARM_LENGTH);
-    let anticlockwise_arm = to + (Mat2::rotate(-0.2 * PI) * backwards_direction * ARROW_ARM_LENGTH);
+    let clockwise_arm =
+        to + (Mat2::rotate(ARROW_ARM_ANGLE) * backwards_direction * ARROW_ARM_LENGTH);
+    let anticlockwise_arm =
+        to + (Mat2::rotate(-ARROW_ARM_ANGLE) * backwards_direction * ARROW_ARM_LENGTH);
 
     [
         Line::new(from, to),
