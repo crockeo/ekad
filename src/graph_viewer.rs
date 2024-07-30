@@ -193,6 +193,8 @@ impl GraphViewer {
     }
 
     pub fn scroll(&mut self, delta_x: f64, delta_y: f64) {
+        // TODO: this still doesn't quite feel right, but i don't know what it is.
+        // try to fix it!
         let inverse_det = self.transform.inverse().determinant();
         self.transform =
             self.transform * Affine::translate((delta_x * inverse_det, delta_y * inverse_det));
