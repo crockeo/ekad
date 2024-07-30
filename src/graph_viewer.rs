@@ -183,8 +183,7 @@ impl GraphViewer {
     }
 
     fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
-        // TODO: this should be something like a quadtree
-        // to scale out better when we have more elements on the screen
+        // TODO: replace with something like kdtree: https://crates.io/crates/kdtree
         let Some(mouse_position) = self.mouse_position() else {
             return None;
         };
