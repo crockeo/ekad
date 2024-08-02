@@ -1,9 +1,14 @@
+use accesskit::Role;
 use lazy_static::lazy_static;
+use masonry::{
+    vello::Scene, AccessCtx, AccessEvent, BoxConstraints, EventCtx, LayoutCtx, LifeCycle,
+    LifeCycleCtx, PaintCtx, PointerEvent, Size, StatusChange, TextEvent, Widget, WidgetId,
+};
 use petgraph::graph::{DiGraph, NodeIndex};
+use smallvec::SmallVec;
 use vello::{
     kurbo::{Affine, Circle, Point, Stroke},
     peniko::Color,
-    Scene,
 };
 
 use crate::shapes;
@@ -29,8 +34,9 @@ use crate::shapes;
 // - Define metadata around nodes to capture some basic information
 //   - Name, notes, scheduled time, etc.
 // - Add a UI around the graph viewer
-//   - See if we can use something like Xilem here and still get access to Vello renderer!
-//   - Otherwise: I guess we're writing our own UI library in Rust from scratch :)
+//   - Turn this into a Masonry widget
+//   - See if we can build an application around it in Masonry
+//   - Eventually: see if it can be integrated into Xilem?
 // - If we run into performance issues:
 //   - Make some way to like """cache""" scene elements,
 //     so we don't have to re-calculate a bunch of stuff around
@@ -70,7 +76,131 @@ pub struct GraphViewer {
 }
 
 impl GraphViewer {
-    pub fn add_to_scene(&self, parent_scene: &mut Scene) {
+    fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
+        // TODO: replace with something like kdtree: https://crates.io/crates/kdtree
+        let Some(mouse_position) = self.mouse_position() else {
+            return None;
+        };
+
+        for circle_id in self.graph.node_indices() {
+            let circle = &self.graph[circle_id];
+            if in_circle(&mouse_position, circle) {
+                return Some(circle_id);
+            }
+        }
+        None
+    }
+
+    /// Returns the in-GraphViewer position of the mouse.
+    /// This should return a Point such that,
+    /// if it were rendered into the scene,
+    /// it would appear directly below the mouse at all times.
+    fn mouse_position(&self) -> Option<Point> {
+        let Some(raw_mouse_position) = self.raw_mouse_position else {
+            return None;
+        };
+        Some(self.transform.inverse() * raw_mouse_position)
+    }
+}
+
+impl Widget for GraphViewer {
+    fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent) {
+        if let PointerEvent::PointerMove(pointer_state) = event {
+            self.raw_mouse_position = Some(Point::new(
+                pointer_state.position.x,
+                pointer_state.position.y,
+            ));
+
+            // TODO: limit this to only ceratin scenarios, like
+            // - when you start/stop hovering over a circle
+            // - when you're in the middle of a gesture
+            // - ???
+            ctx.request_paint();
+        }
+
+        if let PointerEvent::PointerDown(_, _) = event {
+            let Gesture::Inactive = self.gesture else {
+                return;
+            };
+
+            if let Some(circle) = self.hovered_circle() {
+                self.gesture = Gesture::AddingEdge { from: circle };
+            } else {
+                self.gesture = Gesture::AddingNode;
+            }
+            ctx.request_paint();
+        }
+
+        if let PointerEvent::PointerUp(_, _) = event {
+            let hovered_circle = self.hovered_circle();
+            let mouse_position = self.mouse_position();
+
+            match (self.gesture, hovered_circle) {
+                (Gesture::Inactive, _) => {}
+                (Gesture::AddingNode, Some(_)) => {}
+                (Gesture::AddingNode, None) => {
+                    if let Some(mouse_position) = mouse_position {
+                        self.graph
+                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
+                    }
+                }
+                (Gesture::AddingEdge { from }, None) => {
+                    if let Some(mouse_position) = mouse_position {
+                        let to = self
+                            .graph
+                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
+                        self.graph.add_edge(from, to, ());
+                    }
+                }
+                (Gesture::AddingEdge { from }, Some(to)) => {
+                    self.graph.add_edge(from, to, ());
+                }
+            }
+            self.gesture = Gesture::Inactive;
+            ctx.request_paint();
+        }
+
+        if let PointerEvent::MouseWheel(delta, _) = event {
+            // TODO: this still doesn't quite feel right, but i don't know what it is.
+            // try to fix it!
+            let inverse_det = self.transform.inverse().determinant();
+            self.transform =
+                self.transform * Affine::translate((delta.x * inverse_det, delta.y * inverse_det));
+            ctx.request_paint();
+        }
+
+        if let PointerEvent::Pinch(delta, _) = event {
+            let Some(mouse_position) = self.mouse_position() else {
+                return;
+            };
+            let translate = Affine::translate(mouse_position.to_vec2());
+            self.transform =
+                self.transform * translate * Affine::scale(1.0 + delta) * translate.inverse();
+            ctx.request_paint();
+        }
+    }
+
+    fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent) {
+        // TODO
+    }
+
+    fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent) {
+        // TODO
+    }
+
+    fn on_status_change(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange) {
+        // TODO
+    }
+
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle) {
+        // TODO
+    }
+
+    fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
+        bc.max()
+    }
+
+    fn paint(&mut self, ctx: &mut PaintCtx<'_>, parent_scene: &mut Scene) {
         let mut scene = Scene::new();
 
         for circle_id in self.graph.node_indices() {
@@ -142,95 +272,17 @@ impl GraphViewer {
         parent_scene.append(&scene, Some(self.transform));
     }
 
-    pub fn mouse_moved(&mut self, new_position: Option<Point>) -> bool {
-        self.raw_mouse_position = new_position;
-
-        // TODO: don't redraw the screen every time one moves the mouse,
-        // only when it would result in something needing a redraw
-        true
+    fn accessibility_role(&self) -> Role {
+        // TODO: what is this element's role?
+        Role::Unknown
     }
 
-    pub fn mouse_pressed(&mut self) {
-        let Gesture::Inactive = self.gesture else {
-            return;
-        };
-
-        if let Some(circle) = self.hovered_circle() {
-            self.gesture = Gesture::AddingEdge { from: circle };
-        } else {
-            self.gesture = Gesture::AddingNode;
-        }
+    fn accessibility(&mut self, ctx: &mut AccessCtx<'_>) {
+        // TODO
     }
 
-    pub fn mouse_released(&mut self) {
-        let hovered_circle = self.hovered_circle();
-        let mouse_position = self.mouse_position();
-
-        match (self.gesture, hovered_circle) {
-            (Gesture::Inactive, _) => {}
-            (Gesture::AddingNode, Some(_)) => {}
-            (Gesture::AddingNode, None) => {
-                if let Some(mouse_position) = mouse_position {
-                    self.graph
-                        .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
-                }
-            }
-            (Gesture::AddingEdge { from }, None) => {
-                if let Some(mouse_position) = mouse_position {
-                    let to = self
-                        .graph
-                        .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
-                    self.graph.add_edge(from, to, ());
-                }
-            }
-            (Gesture::AddingEdge { from }, Some(to)) => {
-                self.graph.add_edge(from, to, ());
-            }
-        }
-        self.gesture = Gesture::Inactive;
-    }
-
-    pub fn scroll(&mut self, delta_x: f64, delta_y: f64) {
-        // TODO: this still doesn't quite feel right, but i don't know what it is.
-        // try to fix it!
-        let inverse_det = self.transform.inverse().determinant();
-        self.transform =
-            self.transform * Affine::translate((delta_x * inverse_det, delta_y * inverse_det));
-    }
-
-    pub fn zoom(&mut self, delta: f64) {
-        let Some(mouse_position) = self.mouse_position() else {
-            return;
-        };
-        let translate = Affine::translate(mouse_position.to_vec2());
-        self.transform =
-            self.transform * translate * Affine::scale(1.0 + delta) * translate.inverse();
-    }
-
-    fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
-        // TODO: replace with something like kdtree: https://crates.io/crates/kdtree
-        let Some(mouse_position) = self.mouse_position() else {
-            return None;
-        };
-
-        for circle_id in self.graph.node_indices() {
-            let circle = &self.graph[circle_id];
-            if in_circle(&mouse_position, circle) {
-                return Some(circle_id);
-            }
-        }
-        None
-    }
-
-    /// Returns the in-GraphViewer position of the mouse.
-    /// This should return a Point such that,
-    /// if it were rendered into the scene,
-    /// it would appear directly below the mouse at all times.
-    fn mouse_position(&self) -> Option<Point> {
-        let Some(raw_mouse_position) = self.raw_mouse_position else {
-            return None;
-        };
-        Some(self.transform.inverse() * raw_mouse_position)
+    fn children_ids(&self) -> SmallVec<[WidgetId; 16]> {
+        SmallVec::default()
     }
 }
 
