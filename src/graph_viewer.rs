@@ -2,8 +2,9 @@ use accesskit::Role;
 use enum_map::{Enum, EnumMap};
 use lazy_static::lazy_static;
 use masonry::{
-    vello::Scene, AccessCtx, AccessEvent, BoxConstraints, EventCtx, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, PointerEvent, Size, StatusChange, TextEvent, Widget, WidgetId,
+    vello::Scene, AccessCtx, AccessEvent, BoxConstraints, CursorIcon, EventCtx, LayoutCtx,
+    LifeCycle, LifeCycleCtx, PaintCtx, PointerEvent, Size, StatusChange, TextEvent, Widget,
+    WidgetId,
 };
 use petgraph::graph::{DiGraph, NodeIndex};
 use smallvec::SmallVec;
@@ -42,8 +43,6 @@ use crate::shapes;
 //   - Make some way to like """cache""" scene elements,
 //     so we don't have to re-calculate a bunch of stuff around
 //     circles and lines and stuff like that.
-
-// TODO: misc thing, how do i make the pointer look like a hand when it's in "grab" mode (space is down)
 
 const CIRCLE_RADIUS: f64 = 40.0;
 
@@ -176,20 +175,34 @@ impl Widget for GraphViewer {
             // TODO: I fear that this will explode in complexity
             // if I want to support more combinations of hotkeys and clicks.
             // how to do this better?
+            //
+            // TODO: the cursor change doesn't take effect when you press space,
+            // but instead afterwards, the first moment you move your mouse :/
             let space_pressed = self.hotkey_state[Hotkey::Space];
             self.gesture = match (space_pressed, self.hovered_circle()) {
                 (false, None) => Gesture::AddingNode,
                 (false, Some(circle)) => Gesture::AddingEdge { from: circle },
-                (true, None) => Gesture::Panning,
-                (true, Some(circle)) => Gesture::MovingNode { node: circle },
+                (true, None) => {
+                    ctx.set_cursor(&CursorIcon::Grabbing);
+                    Gesture::Panning
+                }
+                (true, Some(circle)) => {
+                    ctx.set_cursor(&CursorIcon::Grabbing);
+                    Gesture::MovingNode { node: circle }
+                }
             };
-
             ctx.request_paint();
         }
 
         if let PointerEvent::PointerUp(_, _) = event {
             let hovered_circle = self.hovered_circle();
             let mouse_position = self.mouse_position();
+
+            if self.hotkey_state[Hotkey::Space] {
+                ctx.set_cursor(&CursorIcon::Grab);
+            } else {
+                ctx.clear_cursor();
+            }
 
             match (self.gesture, hovered_circle) {
                 (Gesture::AddingNode, None) => {
@@ -245,9 +258,16 @@ impl Widget for GraphViewer {
                 return;
             };
             match key.state {
-                ElementState::Pressed => self.hotkey_state[hotkey] = true,
-                ElementState::Released => self.hotkey_state[hotkey] = false,
+                ElementState::Pressed => {
+                    ctx.set_cursor(&CursorIcon::Grab);
+                    self.hotkey_state[hotkey] = true;
+                }
+                ElementState::Released => {
+                    ctx.clear_cursor();
+                    self.hotkey_state[hotkey] = false;
+                }
             }
+            ctx.request_paint();
         }
     }
 
