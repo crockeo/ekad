@@ -1,4 +1,5 @@
 use accesskit::Role;
+use enum_map::{Enum, EnumMap};
 use lazy_static::lazy_static;
 use masonry::{
     vello::Scene, AccessCtx, AccessEvent, BoxConstraints, EventCtx, LayoutCtx, LifeCycle,
@@ -9,6 +10,10 @@ use smallvec::SmallVec;
 use vello::{
     kurbo::{Affine, Circle, Point, Stroke},
     peniko::Color,
+};
+use winit::{
+    event::ElementState,
+    keyboard::{KeyCode, PhysicalKey},
 };
 
 use crate::shapes;
@@ -71,6 +76,7 @@ lazy_static! {
 pub struct GraphViewer {
     gesture: Gesture,
     graph: DiGraph<Circle, ()>,
+    hotkey_state: EnumMap<Hotkey, bool>,
     raw_mouse_position: Option<Point>,
     transform: Affine,
 }
@@ -181,7 +187,15 @@ impl Widget for GraphViewer {
     }
 
     fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent) {
-        // TODO
+        if let TextEvent::KeyboardKey(key, _) = event {
+            let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
+                return;
+            };
+            match key.state {
+                ElementState::Pressed => self.hotkey_state[hotkey] = true,
+                ElementState::Released => self.hotkey_state[hotkey] = false,
+            }
+        }
     }
 
     fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent) {
@@ -309,5 +323,19 @@ enum Gesture {
 impl Default for Gesture {
     fn default() -> Self {
         Gesture::Inactive
+    }
+}
+
+#[derive(Clone, Copy, Enum, Eq, PartialEq)]
+enum Hotkey {
+    Space,
+}
+
+impl Hotkey {
+    fn from_physical_key(physical_key: PhysicalKey) -> Option<Self> {
+        match physical_key {
+            PhysicalKey::Code(KeyCode::Space) => Some(Self::Space),
+            _ => None,
+        }
     }
 }

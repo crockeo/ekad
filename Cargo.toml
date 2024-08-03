@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 accesskit = "0.16.0"
 anyhow = "1.0.86"
+enum-map = "2.7.3"
 lazy_static = "1.5.0"
 log = "0.4.22"
 masonry = { path = "../xilem/masonry" }
