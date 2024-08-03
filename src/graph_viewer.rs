@@ -3,7 +3,7 @@ use enum_map::{Enum, EnumMap};
 use lazy_static::lazy_static;
 use masonry::{
     vello::Scene, AccessCtx, AccessEvent, BoxConstraints, CursorIcon, EventCtx, LayoutCtx,
-    LifeCycle, LifeCycleCtx, PaintCtx, PointerEvent, Size, StatusChange, TextEvent, Widget,
+    LifeCycle, LifeCycleCtx, PaintCtx, PointerEvent, Size, StatusChange, TextEvent, Vec2, Widget,
     WidgetId,
 };
 use petgraph::graph::{DiGraph, NodeIndex};
@@ -160,12 +160,6 @@ impl Widget for GraphViewer {
                 return;
             };
 
-            // TODO: I fear that this will explode in complexity
-            // if I want to support more combinations of hotkeys and clicks.
-            // how to do this better?
-            //
-            // TODO: the cursor change doesn't take effect when you press space,
-            // but instead afterwards, the first moment you move your mouse :/
             let space_pressed = self.hotkey_state[Hotkey::Space];
             self.gesture = match (space_pressed, self.hovered_circle()) {
                 (false, None) => Gesture::AddingNode,
@@ -217,11 +211,7 @@ impl Widget for GraphViewer {
         }
 
         if let PointerEvent::MouseWheel(delta, _) = event {
-            // TODO: this still doesn't quite feel right, but i don't know what it is.
-            // try to fix it!
-            let inverse_det = self.transform.inverse().determinant();
-            self.transform =
-                self.transform * Affine::translate((delta.x * inverse_det, delta.y * inverse_det));
+            self.transform = self.transform.then_translate(Vec2::new(delta.x, delta.y));
             ctx.request_paint();
         }
 
@@ -244,6 +234,8 @@ impl Widget for GraphViewer {
             let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
                 return;
             };
+            // TODO: the cursor change doesn't take effect when you press space,
+            // but instead afterwards, the first moment you move your mouse :/
             match key.state {
                 ElementState::Pressed => {
                     ctx.set_cursor(&CursorIcon::Grab);
