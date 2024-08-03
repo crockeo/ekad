@@ -28,10 +28,6 @@ use crate::shapes;
 // - but by zooming in keep the total number of nodes you're rendering below some max amount
 //   by using a quad tree / culling approach to rendering
 
-// TODO: what kinds of things are missing JUST in graph viewer
-// - Move nodes around
-// - Delete nodes
-
 // TODO: and what kinds of stuff are an Eventually(tm) (aka: BIG!)
 // - Hook it up to storage
 //   - Preferably something like automerge.rs so it can be synchronized
@@ -46,6 +42,8 @@ use crate::shapes;
 //   - Make some way to like """cache""" scene elements,
 //     so we don't have to re-calculate a bunch of stuff around
 //     circles and lines and stuff like that.
+
+// TODO: misc thing, how do i make the pointer look like a hand when it's in "grab" mode (space is down)
 
 const CIRCLE_RADIUS: f64 = 40.0;
 
@@ -72,13 +70,28 @@ lazy_static! {
     static ref LINE_STROKE: Stroke = Stroke::new(4.0);
 }
 
-#[derive(Default)]
 pub struct GraphViewer {
     gesture: Gesture,
     graph: DiGraph<Circle, ()>,
     hotkey_state: EnumMap<Hotkey, bool>,
     raw_mouse_position: Option<Point>,
     transform: Affine,
+    // TODO: i have this separate from transform so that i can use it to scale certain movements,
+    // but i feel like i should be able to get this out of the Affine matrix :/
+    zoom: f64,
+}
+
+impl Default for GraphViewer {
+    fn default() -> Self {
+        Self {
+            gesture: Default::default(),
+            graph: Default::default(),
+            hotkey_state: Default::default(),
+            raw_mouse_position: Default::default(),
+            transform: Default::default(),
+            zoom: 1.0,
+        }
+    }
 }
 
 impl GraphViewer {
@@ -111,11 +124,42 @@ impl GraphViewer {
 
 impl Widget for GraphViewer {
     fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent) {
+        if !ctx.has_focus() {
+            // TODO: how should this actually work?
+            // i want to be able to receive hotkeys anytime i'm interacting with the graph
+            // how should i be able to receive text events?
+            //
+            // and what would happen if i hold down a hotkey *before* i'm focusing
+            // but then i focus after??? i would just miss the hotkey and that's confusing :(
+            // it should be about the stateless "is the Space bar pressed"
+            // not "was there a text event"
+            ctx.request_focus()
+        }
+
         if let PointerEvent::PointerMove(pointer_state) = event {
-            self.raw_mouse_position = Some(Point::new(
-                pointer_state.position.x,
-                pointer_state.position.y,
-            ));
+            let new_position = Point::new(pointer_state.position.x, pointer_state.position.y);
+
+            if let (Gesture::Panning, Some(raw_mouse_position)) =
+                (self.gesture, self.raw_mouse_position)
+            {
+                let mut movement =
+                    self.transform * new_position - self.transform * raw_mouse_position;
+                movement *= self.transform.inverse().determinant();
+                self.transform *= Affine::translate(movement);
+            }
+
+            // TODO: this moves the circle in a jerky way,
+            // because the user doesn't necessarily grab the circle by the center.
+            // i need to record the difference between the in-world mouse position
+            // and the center of the circle
+            // at the time that it's grabbed,
+            // and then move the circle to:
+            //   `(self.transform.inverse() * new_position) + difference`
+            if let Gesture::MovingNode { node } = self.gesture {
+                self.graph[node].center = self.transform.inverse() * new_position;
+            }
+
+            self.raw_mouse_position = Some(new_position);
 
             // TODO: limit this to only ceratin scenarios, like
             // - when you start/stop hovering over a circle
@@ -129,11 +173,17 @@ impl Widget for GraphViewer {
                 return;
             };
 
-            if let Some(circle) = self.hovered_circle() {
-                self.gesture = Gesture::AddingEdge { from: circle };
-            } else {
-                self.gesture = Gesture::AddingNode;
-            }
+            // TODO: I fear that this will explode in complexity
+            // if I want to support more combinations of hotkeys and clicks.
+            // how to do this better?
+            let space_pressed = self.hotkey_state[Hotkey::Space];
+            self.gesture = match (space_pressed, self.hovered_circle()) {
+                (false, None) => Gesture::AddingNode,
+                (false, Some(circle)) => Gesture::AddingEdge { from: circle },
+                (true, None) => Gesture::Panning,
+                (true, Some(circle)) => Gesture::MovingNode { node: circle },
+            };
+
             ctx.request_paint();
         }
 
@@ -142,8 +192,6 @@ impl Widget for GraphViewer {
             let mouse_position = self.mouse_position();
 
             match (self.gesture, hovered_circle) {
-                (Gesture::Inactive, _) => {}
-                (Gesture::AddingNode, Some(_)) => {}
                 (Gesture::AddingNode, None) => {
                     if let Some(mouse_position) = mouse_position {
                         self.graph
@@ -161,6 +209,7 @@ impl Widget for GraphViewer {
                 (Gesture::AddingEdge { from }, Some(to)) => {
                     self.graph.add_edge(from, to, ());
                 }
+                _ => {}
             }
             self.gesture = Gesture::Inactive;
             ctx.request_paint();
@@ -180,6 +229,7 @@ impl Widget for GraphViewer {
                 return;
             };
             let translate = Affine::translate(mouse_position.to_vec2());
+            self.zoom += delta;
             self.transform =
                 self.transform * translate * Affine::scale(1.0 + delta) * translate.inverse();
             ctx.request_paint();
@@ -188,6 +238,9 @@ impl Widget for GraphViewer {
 
     fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent) {
         if let TextEvent::KeyboardKey(key, _) = event {
+            if key.repeat {
+                return;
+            }
             let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
                 return;
             };
@@ -245,9 +298,6 @@ impl Widget for GraphViewer {
         }
 
         match (self.mouse_position(), self.gesture, self.hovered_circle()) {
-            (None, _, _) => {}
-            (_, Gesture::Inactive, _) => {}
-            (_, Gesture::AddingNode, Some(_)) => {}
             (Some(mouse_position), Gesture::AddingNode, None) => {
                 scene.fill(
                     vello::peniko::Fill::NonZero,
@@ -281,6 +331,7 @@ impl Widget for GraphViewer {
                     &self.graph[to],
                 );
             }
+            _ => {}
         }
 
         parent_scene.append(&scene, Some(self.transform));
@@ -313,11 +364,13 @@ fn in_circle(point: &Point, circle: &Circle) -> bool {
     point.distance_squared(circle.center) < circle.radius * circle.radius
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Gesture {
     Inactive,
     AddingNode,
     AddingEdge { from: NodeIndex<u32> },
+    Panning,
+    MovingNode { node: NodeIndex<u32> },
 }
 
 impl Default for Gesture {
@@ -326,7 +379,7 @@ impl Default for Gesture {
     }
 }
 
-#[derive(Clone, Copy, Enum, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Enum, Eq, PartialEq)]
 enum Hotkey {
     Space,
 }
