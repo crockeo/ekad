@@ -17,8 +17,6 @@ impl AppDriver for Ekad {
         widget_id: masonry::WidgetId,
         action: masonry::Action,
     ) {
-        // TODO: implement
-        // println!("{:?}", action);
     }
 }
 

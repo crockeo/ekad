@@ -274,17 +274,11 @@ impl Widget for GraphViewer {
         }
     }
 
-    fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent) {
-        // TODO
-    }
+    fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent) {}
 
-    fn on_status_change(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange) {
-        // TODO
-    }
+    fn on_status_change(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange) {}
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle) {
-        // TODO
-    }
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle) {}
 
     fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
         bc.max()
@@ -361,13 +355,10 @@ impl Widget for GraphViewer {
     }
 
     fn accessibility_role(&self) -> Role {
-        // TODO: what is this element's role?
         Role::Unknown
     }
 
-    fn accessibility(&mut self, ctx: &mut AccessCtx<'_>) {
-        // TODO
-    }
+    fn accessibility(&mut self, ctx: &mut AccessCtx<'_>) {}
 
     fn children_ids(&self) -> SmallVec<[WidgetId; 16]> {
         SmallVec::default()
