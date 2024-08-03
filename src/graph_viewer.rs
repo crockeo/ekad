@@ -29,6 +29,9 @@ use crate::shapes;
 // - but by zooming in keep the total number of nodes you're rendering below some max amount
 //   by using a quad tree / culling approach to rendering
 
+// TODO: do a pass to see if i can clean up more of the code in here
+// before i add more complexity around the rest of the program
+
 // TODO: and what kinds of stuff are an Eventually(tm) (aka: BIG!)
 // - Hook it up to storage
 //   - Preferably something like automerge.rs so it can be synchronized
