@@ -72,28 +72,13 @@ lazy_static! {
     static ref LINE_STROKE: Stroke = Stroke::new(4.0);
 }
 
+#[derive(Default)]
 pub struct GraphViewer {
     gesture: Gesture,
     graph: DiGraph<Circle, ()>,
     hotkey_state: EnumMap<Hotkey, bool>,
     raw_mouse_position: Option<Point>,
     transform: Affine,
-    // TODO: i have this separate from transform so that i can use it to scale certain movements,
-    // but i feel like i should be able to get this out of the Affine matrix :/
-    zoom: f64,
-}
-
-impl Default for GraphViewer {
-    fn default() -> Self {
-        Self {
-            gesture: Default::default(),
-            graph: Default::default(),
-            hotkey_state: Default::default(),
-            raw_mouse_position: Default::default(),
-            transform: Default::default(),
-            zoom: 1.0,
-        }
-    }
 }
 
 impl GraphViewer {
@@ -245,7 +230,6 @@ impl Widget for GraphViewer {
                 return;
             };
             let translate = Affine::translate(mouse_position.to_vec2());
-            self.zoom += delta;
             self.transform =
                 self.transform * translate * Affine::scale(1.0 + delta) * translate.inverse();
             ctx.request_paint();
