@@ -135,15 +135,13 @@ impl Widget for GraphViewer {
                 self.transform *= Affine::translate(movement);
             }
 
-            // TODO: this moves the circle in a jerky way,
-            // because the user doesn't necessarily grab the circle by the center.
-            // i need to record the difference between the in-world mouse position
-            // and the center of the circle
-            // at the time that it's grabbed,
-            // and then move the circle to:
-            //   `(self.transform.inverse() * new_position) + difference`
-            if let Gesture::MovingNode { node } = self.gesture {
-                self.graph[node].center = self.transform.inverse() * new_position;
+            if let Gesture::MovingNode {
+                node,
+                initial_distance,
+            } = self.gesture
+            {
+                self.graph[node].center =
+                    (self.transform.inverse() * new_position) + initial_distance;
             }
 
             self.raw_mouse_position = Some(new_position);
@@ -169,8 +167,14 @@ impl Widget for GraphViewer {
                     Gesture::Panning
                 }
                 (true, Some(circle)) => {
+                    let mouse_position = self
+                        .mouse_position()
+                        .expect("Must have mouse_position() if you also have hovered_circle()");
                     ctx.set_cursor(&CursorIcon::Grabbing);
-                    Gesture::MovingNode { node: circle }
+                    Gesture::MovingNode {
+                        node: circle,
+                        initial_distance: self.graph[circle].center - mouse_position,
+                    }
                 }
             };
             ctx.request_paint();
@@ -355,13 +359,18 @@ pub fn draw_arrow_between(
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Gesture {
     Inactive,
     AddingNode,
-    AddingEdge { from: NodeIndex<u32> },
+    AddingEdge {
+        from: NodeIndex<u32>,
+    },
     Panning,
-    MovingNode { node: NodeIndex<u32> },
+    MovingNode {
+        node: NodeIndex<u32>,
+        initial_distance: Vec2,
+    },
 }
 
 impl Default for Gesture {
