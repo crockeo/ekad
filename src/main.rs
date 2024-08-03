@@ -4,7 +4,6 @@ mod shapes;
 
 use crate::graph_viewer::GraphViewer;
 use masonry::app_driver::AppDriver;
-use masonry::widget::RootWidget;
 use winit::dpi::LogicalSize;
 use winit::window::Window;
 
@@ -29,7 +28,7 @@ fn main() -> anyhow::Result<()> {
     masonry::event_loop_runner::run(
         masonry::event_loop_runner::EventLoop::with_user_event(),
         window_attributes,
-        RootWidget::new(GraphViewer::default()),
+        GraphViewer::default(),
         Ekad {},
     )?;
     Ok(())
