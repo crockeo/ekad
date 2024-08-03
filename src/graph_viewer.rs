@@ -105,7 +105,7 @@ impl GraphViewer {
 
         for circle_id in self.graph.node_indices() {
             let circle = &self.graph[circle_id];
-            if in_circle(&mouse_position, circle) {
+            if shapes::in_circle(&mouse_position, circle) {
                 return Some(circle_id);
             }
         }
@@ -292,7 +292,7 @@ impl Widget for GraphViewer {
 
             let is_in_circle = match self.mouse_position() {
                 None => false,
-                Some(mouse_position) => in_circle(&mouse_position, circle),
+                Some(mouse_position) => shapes::in_circle(&mouse_position, circle),
             };
 
             let circle_fill_color = if is_in_circle {
@@ -365,17 +365,18 @@ impl Widget for GraphViewer {
     }
 }
 
-fn draw_arrow_between(scene: &mut Scene, color: &Color, from_circle: &Circle, to_circle: &Circle) {
+pub fn draw_arrow_between(
+    scene: &mut Scene,
+    color: &Color,
+    from_circle: &Circle,
+    to_circle: &Circle,
+) {
     let direction = (to_circle.center - from_circle.center).normalize();
     let from = from_circle.center + direction * from_circle.radius + direction * LINE_STROKE.width;
     let to = to_circle.center - direction * to_circle.radius - direction * LINE_STROKE.width;
     for line in shapes::arrow(from, to) {
         scene.stroke(&LINE_STROKE, Affine::IDENTITY, color, None, &line);
     }
-}
-
-fn in_circle(point: &Point, circle: &Circle) -> bool {
-    point.distance_squared(circle.center) < circle.radius * circle.radius
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

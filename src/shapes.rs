@@ -1,6 +1,6 @@
 use masonry::Affine;
 use std::f64::consts::PI;
-use vello::kurbo::{Line, Point, Vec2};
+use vello::kurbo::{Circle, Line, Point};
 
 const ARROW_ARM_LENGTH: f64 = 20.0;
 const ARROW_ARM_ANGLE: f64 = 0.2 * PI;
@@ -25,4 +25,8 @@ pub fn arrow(from: Point, to: Point) -> [Line; 3] {
         Line::new(to, clockwise_arm),
         Line::new(to, anticlockwise_arm),
     ]
+}
+
+pub fn in_circle(point: &Point, circle: &Circle) -> bool {
+    point.distance_squared(circle.center) < circle.radius * circle.radius
 }
