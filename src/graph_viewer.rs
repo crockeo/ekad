@@ -6,7 +6,6 @@ use masonry::{
     LifeCycle, LifeCycleCtx, PaintCtx, PointerEvent, Size, StatusChange, TextEvent, Vec2, Widget,
     WidgetId,
 };
-use petgraph::graph::{DiGraph, NodeIndex};
 use smallvec::SmallVec;
 use vello::{
     kurbo::{Affine, Circle, Point, Stroke},
@@ -17,6 +16,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
+use crate::graph::{Graph, NodeIndex};
 use crate::shapes;
 
 // NOTE: It would be interesting to use some concept of "centrality"
@@ -73,23 +73,23 @@ lazy_static! {
 }
 
 #[derive(Default)]
-pub struct GraphViewer {
+pub struct GraphViewer<G: Graph<Circle>> {
     gesture: Gesture,
-    graph: DiGraph<Circle, ()>,
+    graph: G,
     hotkey_state: EnumMap<Hotkey, bool>,
     raw_mouse_position: Option<Point>,
     transform: Affine,
 }
 
-impl GraphViewer {
-    fn hovered_circle(&self) -> Option<NodeIndex<u32>> {
+impl<G: Graph<Circle>> GraphViewer<G> {
+    fn hovered_circle(&self) -> Option<NodeIndex> {
         // TODO: replace with something like kdtree: https://crates.io/crates/kdtree
         let Some(mouse_position) = self.mouse_position() else {
             return None;
         };
 
-        for circle_id in self.graph.node_indices() {
-            let circle = &self.graph[circle_id];
+        for circle_id in self.graph.node_indices().unwrap() {
+            let circle = self.graph.get_node(circle_id).unwrap();
             if shapes::in_circle(&mouse_position, circle) {
                 return Some(circle_id);
             }
@@ -109,7 +109,7 @@ impl GraphViewer {
     }
 }
 
-impl Widget for GraphViewer {
+impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
     fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent) {
         if !ctx.has_focus() {
             // TODO: how should this actually work?
@@ -140,8 +140,9 @@ impl Widget for GraphViewer {
                 initial_distance,
             } = self.gesture
             {
-                self.graph[node].center =
-                    (self.transform.inverse() * new_position) + initial_distance;
+                let mut circle = *self.graph.get_node(node).unwrap();
+                circle.center = (self.transform.inverse() * new_position) + initial_distance;
+                self.graph.set_node(node, circle).unwrap();
             }
 
             self.raw_mouse_position = Some(new_position);
@@ -173,7 +174,8 @@ impl Widget for GraphViewer {
                     ctx.set_cursor(&CursorIcon::Grabbing);
                     Gesture::MovingNode {
                         node: circle,
-                        initial_distance: self.graph[circle].center - mouse_position,
+                        initial_distance: self.graph.get_node(circle).unwrap().center
+                            - mouse_position,
                     }
                 }
             };
@@ -194,19 +196,21 @@ impl Widget for GraphViewer {
                 (Gesture::AddingNode, None) => {
                     if let Some(mouse_position) = mouse_position {
                         self.graph
-                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
+                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS))
+                            .unwrap();
                     }
                 }
                 (Gesture::AddingEdge { from }, None) => {
                     if let Some(mouse_position) = mouse_position {
                         let to = self
                             .graph
-                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS));
-                        self.graph.add_edge(from, to, ());
+                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS))
+                            .unwrap();
+                        self.graph.add_edge(from, to).unwrap();
                     }
                 }
                 (Gesture::AddingEdge { from }, Some(to)) => {
-                    self.graph.add_edge(from, to, ());
+                    self.graph.add_edge(from, to).unwrap();
                 }
                 _ => {}
             }
@@ -267,8 +271,8 @@ impl Widget for GraphViewer {
     fn paint(&mut self, ctx: &mut PaintCtx<'_>, parent_scene: &mut Scene) {
         let mut scene = Scene::new();
 
-        for circle_id in self.graph.node_indices() {
-            let circle = &self.graph[circle_id];
+        for circle_id in self.graph.node_indices().unwrap() {
+            let circle = self.graph.get_node(circle_id).unwrap();
 
             let is_in_circle = match self.mouse_position() {
                 None => false,
@@ -288,8 +292,8 @@ impl Widget for GraphViewer {
                 None,
                 circle,
             );
-            for neighbor_circle_id in self.graph.neighbors(circle_id) {
-                let neighbor_circle = &self.graph[neighbor_circle_id];
+            for neighbor_circle_id in self.graph.neighbors(circle_id).unwrap() {
+                let neighbor_circle = &self.graph.get_node(neighbor_circle_id).unwrap();
                 draw_arrow_between(&mut scene, &BASE_COLOR, circle, neighbor_circle);
             }
         }
@@ -316,7 +320,7 @@ impl Widget for GraphViewer {
                 draw_arrow_between(
                     &mut scene,
                     &PREVIEW_COLOR,
-                    &self.graph[from],
+                    self.graph.get_node(from).unwrap(),
                     &preview_circle,
                 );
             }
@@ -324,8 +328,8 @@ impl Widget for GraphViewer {
                 draw_arrow_between(
                     &mut scene,
                     &PREVIEW_COLOR,
-                    &self.graph[from],
-                    &self.graph[to],
+                    &self.graph.get_node(from).unwrap(),
+                    &self.graph.get_node(to).unwrap(),
                 );
             }
             _ => {}
@@ -364,11 +368,11 @@ enum Gesture {
     Inactive,
     AddingNode,
     AddingEdge {
-        from: NodeIndex<u32>,
+        from: NodeIndex,
     },
     Panning,
     MovingNode {
-        node: NodeIndex<u32>,
+        node: NodeIndex,
         initial_distance: Vec2,
     },
 }

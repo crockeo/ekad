@@ -1,9 +1,11 @@
 #![allow(unused_variables)]
+mod graph;
 mod graph_viewer;
 mod shapes;
 
 use crate::graph_viewer::GraphViewer;
 use masonry::app_driver::AppDriver;
+use vello::kurbo::Circle;
 use winit::dpi::LogicalSize;
 use winit::window::Window;
 
@@ -28,7 +30,7 @@ fn main() -> anyhow::Result<()> {
     masonry::event_loop_runner::run(
         masonry::event_loop_runner::EventLoop::with_user_event(),
         window_attributes,
-        GraphViewer::default(),
+        GraphViewer::<graph::PetgraphGraph<Circle>>::default(),
         Ekad {},
     )?;
     Ok(())
