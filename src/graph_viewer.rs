@@ -16,7 +16,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
-use crate::graph::{Graph, NodeIndex};
+use crate::graph::{Graph, Node, NodeIndex};
 use crate::shapes;
 
 // NOTE: It would be interesting to use some concept of "centrality"
@@ -73,7 +73,7 @@ lazy_static! {
 }
 
 #[derive(Default)]
-pub struct GraphViewer<G: Graph<Circle>> {
+pub struct GraphViewer<G> {
     gesture: Gesture,
     graph: G,
     hotkey_state: EnumMap<Hotkey, bool>,
@@ -81,17 +81,17 @@ pub struct GraphViewer<G: Graph<Circle>> {
     transform: Affine,
 }
 
-impl<G: Graph<Circle>> GraphViewer<G> {
+impl<G: Graph> GraphViewer<G> {
     fn hovered_circle(&self) -> Option<NodeIndex> {
         // TODO: replace with something like kdtree: https://crates.io/crates/kdtree
         let Some(mouse_position) = self.mouse_position() else {
             return None;
         };
 
-        for circle_id in self.graph.node_indices().unwrap() {
-            let circle = self.graph.get_node(circle_id).unwrap();
-            if shapes::in_circle(&mouse_position, circle) {
-                return Some(circle_id);
+        for node_id in self.graph.node_indices().unwrap() {
+            let node = self.graph.get_node(node_id).unwrap();
+            if shapes::in_circle(&mouse_position, &node.circle) {
+                return Some(node_id);
             }
         }
         None
@@ -109,7 +109,7 @@ impl<G: Graph<Circle>> GraphViewer<G> {
     }
 }
 
-impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
+impl<G: Graph + 'static> Widget for GraphViewer<G> {
     fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent) {
         if !ctx.has_focus() {
             // TODO: how should this actually work?
@@ -136,13 +136,13 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
             }
 
             if let Gesture::MovingNode {
-                node,
+                node_id,
                 initial_distance,
             } = self.gesture
             {
-                let mut circle = *self.graph.get_node(node).unwrap();
-                circle.center = (self.transform.inverse() * new_position) + initial_distance;
-                self.graph.set_node(node, circle).unwrap();
+                let mut node = *self.graph.get_node(node_id).unwrap();
+                node.circle.center = (self.transform.inverse() * new_position) + initial_distance;
+                self.graph.set_node(node_id, node).unwrap();
             }
 
             self.raw_mouse_position = Some(new_position);
@@ -173,8 +173,8 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
                         .expect("Must have mouse_position() if you also have hovered_circle()");
                     ctx.set_cursor(&CursorIcon::Grabbing);
                     Gesture::MovingNode {
-                        node: circle,
-                        initial_distance: self.graph.get_node(circle).unwrap().center
+                        node_id: circle,
+                        initial_distance: self.graph.get_node(circle).unwrap().circle.center
                             - mouse_position,
                     }
                 }
@@ -196,7 +196,9 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
                 (Gesture::AddingNode, None) => {
                     if let Some(mouse_position) = mouse_position {
                         self.graph
-                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS))
+                            .add_node(Node {
+                                circle: Circle::new(mouse_position, CIRCLE_RADIUS),
+                            })
                             .unwrap();
                     }
                 }
@@ -204,7 +206,9 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
                     if let Some(mouse_position) = mouse_position {
                         let to = self
                             .graph
-                            .add_node(Circle::new(mouse_position, CIRCLE_RADIUS))
+                            .add_node(Node {
+                                circle: Circle::new(mouse_position, CIRCLE_RADIUS),
+                            })
                             .unwrap();
                         self.graph.add_edge(from, to).unwrap();
                     }
@@ -272,11 +276,11 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
         let mut scene = Scene::new();
 
         for circle_id in self.graph.node_indices().unwrap() {
-            let circle = self.graph.get_node(circle_id).unwrap();
+            let node = self.graph.get_node(circle_id).unwrap();
 
             let is_in_circle = match self.mouse_position() {
                 None => false,
-                Some(mouse_position) => shapes::in_circle(&mouse_position, circle),
+                Some(mouse_position) => shapes::in_circle(&mouse_position, &node.circle),
             };
 
             let circle_fill_color = if is_in_circle {
@@ -290,11 +294,11 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
                 Affine::IDENTITY,
                 circle_fill_color,
                 None,
-                circle,
+                &node.circle,
             );
             for neighbor_circle_id in self.graph.neighbors(circle_id).unwrap() {
-                let neighbor_circle = &self.graph.get_node(neighbor_circle_id).unwrap();
-                draw_arrow_between(&mut scene, &BASE_COLOR, circle, neighbor_circle);
+                let neighbor_node = &self.graph.get_node(neighbor_circle_id).unwrap();
+                draw_arrow_between(&mut scene, &BASE_COLOR, &node.circle, &neighbor_node.circle);
             }
         }
 
@@ -320,7 +324,7 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
                 draw_arrow_between(
                     &mut scene,
                     &PREVIEW_COLOR,
-                    self.graph.get_node(from).unwrap(),
+                    &self.graph.get_node(from).unwrap().circle,
                     &preview_circle,
                 );
             }
@@ -328,8 +332,8 @@ impl<G: Graph<Circle> + 'static> Widget for GraphViewer<G> {
                 draw_arrow_between(
                     &mut scene,
                     &PREVIEW_COLOR,
-                    &self.graph.get_node(from).unwrap(),
-                    &self.graph.get_node(to).unwrap(),
+                    &self.graph.get_node(from).unwrap().circle,
+                    &self.graph.get_node(to).unwrap().circle,
                 );
             }
             _ => {}
@@ -372,7 +376,7 @@ enum Gesture {
     },
     Panning,
     MovingNode {
-        node: NodeIndex,
+        node_id: NodeIndex,
         initial_distance: Vec2,
     },
 }
