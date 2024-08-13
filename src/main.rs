@@ -29,7 +29,7 @@ fn main() -> anyhow::Result<()> {
     masonry::event_loop_runner::run(
         masonry::event_loop_runner::EventLoop::with_user_event(),
         window_attributes,
-        GraphViewer::<graph::PetgraphGraph>::default(),
+        GraphViewer::<graph::DatabaseGraph>::default(),
         Ekad {},
     )?;
     Ok(())

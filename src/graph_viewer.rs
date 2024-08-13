@@ -140,7 +140,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 initial_distance,
             } = self.gesture
             {
-                let mut node = *self.graph.get_node(node_id).unwrap();
+                let mut node = self.graph.get_node(node_id).unwrap();
                 node.circle.center = (self.transform.inverse() * new_position) + initial_distance;
                 self.graph.set_node(node_id, node).unwrap();
             }
