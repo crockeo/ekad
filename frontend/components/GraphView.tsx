@@ -45,7 +45,7 @@ export default function GraphView({
         ctx.font = `${fontSize}px Sans-Serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(node.id.replace(/^suma\.apps\./, ""), node.x, node.y + 6);
+        ctx.fillText(node.id.replace(/^suma\.apps\./, ""), node.x, node.y + 8);
       })
       .onBackgroundClick((evt) => onBackgroundClick && onBackgroundClick(evt))
       .linkDirectionalArrowLength(5)

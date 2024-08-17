@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
-import GraphView, { GraphData, type NodeObject } from "./components/GraphView";
+import GraphView, { type GraphData, type NodeObject } from "./components/GraphView";
+import Button from "./components/Button";
+import TextInput from "./components/TextInput";
 import styled from "styled-components";
 
 interface Task {
@@ -15,15 +17,14 @@ export default function App() {
   return (
     <AppContainer>
       <TaskBar>
-        <form onSubmit={newTask}>
-          <input
-            onChange={(e) => setTitle(e.target.value)}
+        <TaskForm onSubmit={newTask}>
+          <TextInput
+            onChange={(newValue) => setTitle(newValue)}
             placeholder="Title"
-            type="text"
             value={title}
           />
-          <button disabled={!title}>Add</button>
-        </form>
+          <Button disabled={!title}>Add</Button>
+        </TaskForm>
 
         <ul>
           {tasks.map(task =>
@@ -68,9 +69,14 @@ const AppContainer = styled.div`
 `;
 
 const TaskBar = styled.div`
+  border-right: 1px solid;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
 `;
 
-const GraphContainer = styled.div`
+const TaskForm = styled.form`
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
 `;
