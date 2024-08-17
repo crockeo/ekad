@@ -1,2 +1,4 @@
 .tmp/
 /target
+dist/
+node_modules/
