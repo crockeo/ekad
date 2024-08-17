@@ -243,6 +243,11 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             if key.repeat {
                 return;
             }
+
+            if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
+                self.gesture = Gesture::Inactive;
+            }
+
             let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
                 return;
             };
@@ -258,8 +263,8 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                     self.hotkey_state[hotkey] = false;
                 }
             }
-            ctx.request_paint();
         }
+        ctx.request_paint();
     }
 
     fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent) {}
