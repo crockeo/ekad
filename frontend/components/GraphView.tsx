@@ -31,6 +31,12 @@ export default function GraphView({
     const graph = ForceGraph()
       .enableZoomInteraction(false)
       .graphData(data)
+      .onNodeClick((node, event) => {
+        console.log(node, event);
+      })
+      .onNodeDrag((node, translate) => {
+        console.log(node, translate);
+      })
       .nodeCanvasObjectMode(() => "after")
       .nodeCanvasObject((node, ctx, globalScale) => {
         // TODO: this is a strange type assertion to have to do.
