@@ -21,8 +21,8 @@ interface GraphViewProps {
 }
 
 export default function GraphView({
-	data,
-	onBackgroundClick
+  data,
+  onBackgroundClick
 }: GraphViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

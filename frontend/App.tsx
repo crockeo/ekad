@@ -23,7 +23,7 @@ export default function App() {
             placeholder="Title"
             value={title}
           />
-          <Button disabled={!title}>Add</Button>
+          <Button disabled={!title} type="constructive">Add</Button>
         </TaskForm>
 
         <ul>
@@ -53,7 +53,7 @@ export default function App() {
         completedAt: null,
       },
     ];
-    
+
     setTasks(newTasks);
     setTitle("");
     setGraphData({
