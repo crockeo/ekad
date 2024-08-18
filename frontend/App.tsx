@@ -76,20 +76,28 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
             .sortBy((task) => [!!task.completedAt, task.title])
             .map((task) => (
               <div
-                className={classNames("flex", "flex-row", "cursor-pointer", {
-                  "line-through": task.completedAt,
-                  "text-gray-400": task.completedAt,
-                })}
+                className={classNames(
+                  "cursor-pointer",
+                  "flex",
+                  "flex-row",
+                  "justify-between",
+                  {
+                    "line-through": task.completedAt,
+                    "text-gray-400": task.completedAt,
+                  },
+                )}
                 key={task.id}
                 onClick={() => setSelectedTask(task)}
               >
-                <input
-                  className="accent-gray-200"
-                  checked={!!task.completedAt}
-                  onChange={(e) => completeTask(e, task)}
-                  type="checkbox"
-                />
-                <span className="px-2">{task.title}</span>
+                <div>
+                  <input
+                    className="accent-gray-200"
+                    checked={!!task.completedAt}
+                    onChange={(e) => completeTask(e, task)}
+                    type="checkbox"
+                  />
+                  <span className="px-2">{task.title}</span>
+                </div>
                 <button
                   className="cursor-pointer text-red-500 text-xs"
                   onClick={() => deleteTask(task)}
