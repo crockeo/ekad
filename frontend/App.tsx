@@ -1,5 +1,5 @@
 import { Map } from "immutable";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { uuidv7 } from "uuidv7";
 
 type UUID = string;
@@ -7,6 +7,7 @@ type UUID = string;
 interface Task {
   id: UUID;
   title: string;
+  completedAt: Date | null;
 }
 
 enum Store {
@@ -28,8 +29,26 @@ export default function App() {
       </form>
       
       <ul>
-        {tasks.valueSeq().map(task => 
-          <li key={task.id}>{task.title}</li>
+        {tasks.valueSeq().sortBy(task => [!!task.completedAt, task.title]).map(task => 
+          <div
+            key={task.id}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              color: task.completedAt ? "#aaaaaa" : undefined,
+              textDecoration: task.completedAt ? "line-through" : undefined,
+            }}
+          >
+            <input
+              checked={!!task.completedAt}
+              onChange={(e) => completeTask(e, task)}
+              type="checkbox"
+              style={{
+                accentColor: "#cccccc",
+              }}
+            />
+            <span>{task.title}</span>
+          </div>
         )}
       </ul>
     </div>
@@ -61,17 +80,36 @@ export default function App() {
     const newTask = {
       id: id,
       title: title,
+      completedAt: null,
     };
 
-    setTasks(tasks.set(id, {
-      id: id,
-      title: title,
-    }));
     setTitle("");
-    
+    setTask(newTask);
+  }
+
+  function completeTask(e: ChangeEvent<HTMLInputElement>, task: Task) {
+    const newCompletedAt =
+      e.target.checked
+        ? new Date()
+        : null;
+
+    const newTask = {
+      ...task,
+      completedAt: newCompletedAt,
+    };
+
+    setTask(newTask);
+  }
+
+  function setTask(task: Task) {
+    setTasks(tasks.set(task.id, task));
+
+    if (!db) {
+      throw new Error(`Tried to add task to DB, but it is null. ${task}`);
+    }
     const tx = db.transaction(Store.Task, "readwrite");
-    const store = tx.objectStore("task");
-    store.add(newTask);
+    const store = tx.objectStore(Store.Task);
+    store.put(task);
   }
 }
 
