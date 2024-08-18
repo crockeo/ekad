@@ -1,23 +1,13 @@
+import type { AutomergeUrl } from "@automerge/automerge-repo";
+import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { Map } from "immutable";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { uuidv7 } from "uuidv7";
+import type { Ekad, Task, UUID } from "./types";
 
-type UUID = string;
-
-interface Task {
-  id: UUID;
-  title: string;
-  completedAt: Date | null;
-  deletedAt: Date | null;
-}
-
-enum Store {
-  Task = "task",
-}
-
-export default function App() {
-  const db = useDatabase("ekad");
-  useEffect(loadTasks, [db]);
+export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
+  const [doc, changeDoc] = useDocument<Ekad>(docUrl);
+  useEffect(loadTasks, [doc]);
 
   const [tasks, setTasks] = useState<Map<UUID, Task>>(Map());
   const [title, setTitle] = useState("");
@@ -76,28 +66,21 @@ export default function App() {
   );
 
   function loadTasks() {
-    if (!db) {
+    if (!doc?.tasks) {
       return;
     }
-    const tx = db.transaction(Store.Task, "readonly");
-    const store = tx.objectStore("task");
-
-    // TODO: do other state handling here?
-    const req = store.getAll();
-    let newTasks = tasks;
-    req.onsuccess = () => {
-      for (const task of req.result) {
-        if (!task.deletedAt) {
-          newTasks = newTasks.set(task.id, task);
-        }
+    let tasks = Map<UUID, Task>();
+    for (const task of Object.values(doc.tasks)) {
+      if (!task.deletedAt) {
+        tasks = tasks.set(task.id, task);
       }
-      setTasks(newTasks);
-    };
+    }
+    setTasks(tasks);
   }
 
   function newTask(e: FormEvent) {
     e.preventDefault();
-    if (!db) {
+    if (!doc) {
       throw new Error("Cannot add task; DB is unavailable?");
     }
 
@@ -138,35 +121,11 @@ export default function App() {
       setTasks(tasks.set(task.id, task));
     }
 
-    if (!db) {
-      throw new Error(`Tried to add task to DB, but it is null. ${task}`);
-    }
-    const tx = db.transaction(Store.Task, "readwrite");
-    const store = tx.objectStore(Store.Task);
-    store.put(task);
-  }
-}
-
-function useDatabase(name: string): IDBDatabase | null {
-  const [db, setDB] = useState<IDBDatabase | null>(null);
-  useEffect(() => {
-    const req = indexedDB.open(name);
-
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      setDB(db);
-      if (!db.objectStoreNames.contains(Store.Task)) {
-        db.createObjectStore(Store.Task, { keyPath: "id" });
+    changeDoc((doc) => {
+      if (!doc.tasks) {
+        doc.tasks = {};
       }
-    };
-
-    req.onsuccess = () => {
-      setDB(req.result);
-    };
-
-    req.onerror = (e) => {
-      throw new Error(`Failed to create database: ${e}`);
-    };
-  }, []);
-  return db;
+      doc.tasks[task.id] = task;
+    });
+  }
 }
