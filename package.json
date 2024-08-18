@@ -18,6 +18,7 @@
   "dependencies": {
     "@automerge/automerge-repo": "^1.2.1",
     "@automerge/automerge-repo-network-broadcastchannel": "^1.2.1",
+    "@automerge/automerge-repo-network-websocket": "^1.2.1",
     "@automerge/automerge-repo-react-hooks": "^1.2.1",
     "@automerge/automerge-repo-storage-indexeddb": "^1.2.1",
     "classnames": "^2.5.1",
@@ -28,6 +29,6 @@
     "uuidv7": "^1.0.1"
   },
   "scripts": {
-    "dev": "vite serve frontend/"
+    "dev": "vite serve frontend/ --host=0.0.0.0"
   }
 }

@@ -2,6 +2,7 @@ import * as ReactDOM from "react-dom/client";
 import App from "./App";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
+import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 import {
   DocHandle,
   isValidAutomergeUrl,
@@ -13,9 +14,10 @@ interface Ekad {}
 
 const indexedDB = new IndexedDBStorageAdapter();
 const broadcast = new BroadcastChannelNetworkAdapter();
+const websocket = new BrowserWebSocketClientAdapter("wss://sync.automerge.org");
 const repo = new Repo({
   storage: indexedDB,
-  network: [broadcast],
+  network: [broadcast, websocket],
 });
 
 const rootDocURL = document.location.hash.substring(1);
