@@ -20,42 +20,52 @@ export default function App() {
 
   const [tasks, setTasks] = useState<Map<UUID, Task>>(Map());
   const [title, setTitle] = useState("");
-  
+
   return (
     <div>
       <form onSubmit={newTask}>
-        <input onChange={(e) => setTitle(e.target.value)} placeholder="Title" type="text" value={title} />
+        <input
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          type="text"
+          value={title}
+        />
         <button disabled={!title}>Submit</button>
       </form>
-      
+
       <ul>
-        {tasks.valueSeq().sortBy(task => [!!task.completedAt, task.title]).map(task => 
-          <div
-            key={task.id}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              color: task.completedAt ? "#aaaaaa" : undefined,
-              textDecoration: task.completedAt ? "line-through" : undefined,
-            }}
-          >
-            <input
-              checked={!!task.completedAt}
-              onChange={(e) => completeTask(e, task)}
-              type="checkbox"
+        {tasks
+          .valueSeq()
+          .sortBy((task) => [!!task.completedAt, task.title])
+          .map((task) => (
+            <div
+              key={task.id}
               style={{
-                accentColor: "#cccccc",
+                display: "flex",
+                flexDirection: "row",
+                color: task.completedAt ? "#aaaaaa" : undefined,
+                textDecoration: task.completedAt ? "line-through" : undefined,
               }}
-            />
-            <span>{task.title}</span>
-          </div>
-        )}
+            >
+              <input
+                checked={!!task.completedAt}
+                onChange={(e) => completeTask(e, task)}
+                type="checkbox"
+                style={{
+                  accentColor: "#cccccc",
+                }}
+              />
+              <span>{task.title}</span>
+            </div>
+          ))}
       </ul>
     </div>
   );
 
   function loadTasks() {
-    if (!db) { return; }
+    if (!db) {
+      return;
+    }
     const tx = db.transaction(Store.Task, "readonly");
     const store = tx.objectStore("task");
 
@@ -88,10 +98,7 @@ export default function App() {
   }
 
   function completeTask(e: ChangeEvent<HTMLInputElement>, task: Task) {
-    const newCompletedAt =
-      e.target.checked
-        ? new Date()
-        : null;
+    const newCompletedAt = e.target.checked ? new Date() : null;
 
     const newTask = {
       ...task,
@@ -117,7 +124,7 @@ function useDatabase(name: string): IDBDatabase | null {
   const [db, setDB] = useState<IDBDatabase | null>(null);
   useEffect(() => {
     const req = indexedDB.open(name);
-    
+
     req.onupgradeneeded = () => {
       const db = req.result;
       setDB(db);

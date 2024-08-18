@@ -12,7 +12,7 @@ this is an attempt at making a graph-based task management software.
 - Tree-based is the same as "list-based," except that you can make sub-tasks of tasks
   which must be completed for the super-task to be marked as done.
   These are called tree based because they resemble
-  [trees](https://en.wikipedia.org/wiki/Tree_(graph_theory))
+  [trees](<https://en.wikipedia.org/wiki/Tree_(graph_theory)>)
   in graph theory.
 
 - Graph-based is the generalization of trees into any

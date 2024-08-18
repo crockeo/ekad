@@ -1,0 +1,8 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: prettier
+        name: prettier
+        entry: bunx prettier ./frontend --write
+        language: system
+        files: \.(css|html|js|jsx|ts|tsx)$

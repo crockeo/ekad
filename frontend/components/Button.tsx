@@ -1,4 +1,4 @@
-import {type PropsWithChildren} from "react";
+import { type PropsWithChildren } from "react";
 import styled from "styled-components";
 import useTheme, { type Theme } from "../theme";
 
@@ -16,10 +16,15 @@ export default function Button({
 }: PropsWithChildren<ButtonProps>) {
   const theme = useTheme();
   return (
-    <StyledButton $disabled={disabled || false} $theme={theme} $type={type} disabled={disabled}>
+    <StyledButton
+      $disabled={disabled || false}
+      $theme={theme}
+      $type={type}
+      disabled={disabled}
+    >
       {children}
     </StyledButton>
-  )
+  );
 }
 
 interface StyledButtonProps {
@@ -68,6 +73,6 @@ const StyledButton = styled.button<StyledButtonProps>`
         return $theme.colors.destructiveDarker;
     }
   }};
-  opacity: ${({ $disabled }) => $disabled ? "50%" : "100%" };
+  opacity: ${({ $disabled }) => ($disabled ? "50%" : "100%")};
   padding: 0.5rem 0.7rem;
 `;

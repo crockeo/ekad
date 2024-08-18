@@ -11,7 +11,7 @@ export interface Colors {
 }
 
 export interface Theme {
-  colors: Colors,
+  colors: Colors;
 }
 
 export default function useTheme(): Theme {

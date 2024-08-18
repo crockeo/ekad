@@ -27,7 +27,7 @@ export default function Modal({
 const BackgroundPane = styled.div<{ open: boolean }>`
   align-items: center;
   background-color: rgba(0, 0, 0, 0.1);
-  display: ${props => props.open ? "flex" : "none"};
+  display: ${(props) => (props.open ? "flex" : "none")};
   height: 100%;
   justify-content: center;
   left: 0;

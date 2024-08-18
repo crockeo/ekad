@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from "react";
-import GraphView, { type GraphData, type NodeObject } from "./components/GraphView";
+import GraphView, {
+  type GraphData,
+  type NodeObject,
+} from "./components/GraphView";
 import Button from "./components/Button";
 import TextInput from "./components/TextInput";
 import styled from "styled-components";
@@ -18,10 +21,13 @@ interface Task {
 
 export default function OldApp() {
   const [modalTask, setModalTask] = useState<Task | null>(null);
-  
+
   const [title, setTitle] = useState("");
   const [tasks, setTasks] = useState<Map<UUID, Task>>(Map());
-  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
+  const [graphData, setGraphData] = useState<GraphData>({
+    nodes: [],
+    links: [],
+  });
 
   return (
     <AppContainer>
@@ -32,11 +38,13 @@ export default function OldApp() {
             placeholder="Title"
             value={title}
           />
-          <Button disabled={!title} type="constructive">Add</Button>
+          <Button disabled={!title} type="constructive">
+            Add
+          </Button>
         </TaskForm>
 
         <ul className="list-disc list-inside">
-          {tasks.valueSeq().map(task =>
+          {tasks.valueSeq().map((task) => (
             <li
               className="cursor-pointer"
               key={task.id}
@@ -44,7 +52,7 @@ export default function OldApp() {
             >
               {task.title}
             </li>
-          )}
+          ))}
         </ul>
       </TaskBar>
 
@@ -56,16 +64,15 @@ export default function OldApp() {
           if (!task) {
             // TODO: do something more interesting here to show this to the user???
             // or how would this have happened?
-            throw Error(`Node click on node whose ID does not match a task: '${node.id}'`);
+            throw Error(
+              `Node click on node whose ID does not match a task: '${node.id}'`,
+            );
           }
           setModalTask(task);
         }}
       />
 
-      <Modal
-        onRequestClose={saveModalTask}
-        open={!!modalTask}
-      >
+      <Modal onRequestClose={saveModalTask} open={!!modalTask}>
         {modalTask && <ModalTaskCard task={modalTask} />}
       </Modal>
     </AppContainer>
@@ -82,15 +89,12 @@ export default function OldApp() {
     e.preventDefault();
 
     const id = uuidv7();
-    const newTasks = tasks.set(
-      id,
-      {
-        id: id,
-        title: title,
-        completedAt: null,
-        dependsOn: [],
-      },
-    );
+    const newTasks = tasks.set(id, {
+      id: id,
+      title: title,
+      completedAt: null,
+      dependsOn: [],
+    });
     setTasks(newTasks);
     setTitle("");
 
@@ -129,7 +133,7 @@ const TaskForm = styled.form`
 `;
 
 interface ModalTaskCardProps {
-  task: Task,
+  task: Task;
 }
 
 function ModalTaskCard({ task }: ModalTaskCardProps) {
@@ -140,4 +144,3 @@ function ModalTaskCard({ task }: ModalTaskCardProps) {
     </div>
   );
 }
-

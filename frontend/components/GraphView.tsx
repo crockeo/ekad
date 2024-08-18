@@ -11,11 +11,7 @@ export interface NodeObject extends ForceGraphNodeObject {
 }
 
 function isNodeObject(obj: object): obj is NodeObject {
-  return (
-    "id" in obj
-    && typeof obj.id == "string"
-    && "name" in obj
-  );
+  return "id" in obj && typeof obj.id == "string" && "name" in obj;
 }
 
 export interface LinkObject extends ForceGraphLinkObject {}
@@ -30,13 +26,12 @@ interface GraphViewProps {
   onNodeClick?: (node: NodeObject, event: MouseEvent) => void;
 }
 
-export default function GraphView({
-  data,
-  onNodeClick,
-}: GraphViewProps) {
+export default function GraphView({ data, onNodeClick }: GraphViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!ref.current) { return; }
+    if (!ref.current) {
+      return;
+    }
 
     const graph = ForceGraph()
       .enableZoomInteraction(false)
@@ -67,7 +62,9 @@ export default function GraphView({
     graph(ref.current);
 
     function onWheel(event: WheelEvent) {
-      if (!ref.current) { return; }
+      if (!ref.current) {
+        return;
+      }
 
       event.preventDefault();
 
@@ -92,8 +89,8 @@ export default function GraphView({
         const mouseDeltaX = event.clientX - rectCenterX;
         const mouseDeltaY = event.clientY - rectCenterY;
 
-        x -= mouseDeltaX * event.deltaY / 100 / zoom;
-        y -= mouseDeltaY * event.deltaY / 100 / zoom;
+        x -= (mouseDeltaX * event.deltaY) / 100 / zoom;
+        y -= (mouseDeltaY * event.deltaY) / 100 / zoom;
       } else {
         x += event.deltaX / zoom;
         y += event.deltaY / zoom;
@@ -114,15 +111,13 @@ export default function GraphView({
     resizeObserver.observe(ref.current);
 
     return () => {
-        if (!ref.current) {
-            return;
-        }
+      if (!ref.current) {
+        return;
+      }
       ref.current.removeEventListener("wheel", onWheel);
       resizeObserver.disconnect();
     };
   }, [data]);
 
-  return (
-    <div ref={ref} />
-  );
+  return <div ref={ref} />;
 }
