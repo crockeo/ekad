@@ -5,7 +5,17 @@ import ForceGraph, {
 import { useEffect, useRef } from "react";
 
 export interface NodeObject extends ForceGraphNodeObject {
+  id: string;
+  name: string;
   nodeColor?: string;
+}
+
+function isNodeObject(obj: object): obj is NodeObject {
+  return (
+    "id" in obj
+    && typeof obj.id == "string"
+    && "name" in obj
+  );
 }
 
 export interface LinkObject extends ForceGraphLinkObject {}
@@ -39,11 +49,7 @@ export default function GraphView({
       })
       .nodeCanvasObjectMode(() => "after")
       .nodeCanvasObject((node, ctx, globalScale) => {
-        // TODO: this is a strange type assertion to have to do.
-        // how can I pass down the fact that the node here
-        // must in fact be *our* NodeObject,
-        // and not the one from force-graph?
-        if (!node.id || typeof node.id != "string" || !node.x || !node.y) {
+        if (!isNodeObject(node) || !node.x || !node.y) {
           return;
         }
 
@@ -51,7 +57,7 @@ export default function GraphView({
         ctx.font = `${fontSize}px Sans-Serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(node.id.replace(/^suma\.apps\./, ""), node.x, node.y + 8);
+        ctx.fillText(node.name, node.x, node.y + 8);
       })
       .onBackgroundClick((evt) => onBackgroundClick && onBackgroundClick(evt))
       .linkDirectionalArrowLength(5)

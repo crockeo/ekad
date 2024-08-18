@@ -3,8 +3,10 @@ import GraphView, { type GraphData, type NodeObject } from "./components/GraphVi
 import Button from "./components/Button";
 import TextInput from "./components/TextInput";
 import styled from "styled-components";
+import { uuidv7 } from "uuidv7";
 
 interface Task {
+  id: string;
   title: string;
   completedAt: Date | null;
 }
@@ -28,7 +30,7 @@ export default function App() {
 
         <ul>
           {tasks.map(task =>
-            <li>{task.title}</li>)
+            <li key={task.id}>{task.title}</li>)
           }
         </ul>
       </TaskBar>
@@ -39,7 +41,8 @@ export default function App() {
 
   function nodeFromTask(task: Task): NodeObject {
     return {
-      id: task.title,
+      id: task.id,
+      name: task.title,
     };
   }
 
@@ -49,6 +52,7 @@ export default function App() {
     const newTasks = [
       ...tasks,
       {
+        id: uuidv7(),
         title: title,
         completedAt: null,
       },
