@@ -7,17 +7,26 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "prettier": "^3.3.3",
-    "tailwindcss": "^3.4.10"
+    "tailwindcss": "^3.4.10",
+    "vite": "^5.4.1",
+    "vite-plugin-top-level-await": "^1.4.4",
+    "vite-plugin-wasm": "^3.3.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@automerge/automerge-repo": "^1.2.1",
+    "@automerge/automerge-repo-react-hooks": "^1.2.1",
+    "@automerge/automerge-repo-storage-indexeddb": "^1.2.1",
     "classnames": "^2.5.1",
     "force-graph": "^1.43.5",
     "immutable": "^4.3.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "uuidv7": "^1.0.1"
+  },
+  "scripts": {
+    "dev": "vite serve frontend/"
   }
 }
