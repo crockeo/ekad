@@ -1,2 +1,2 @@
 dev:
-    bun run --watch scripts/dev.ts
+    bash scripts/dev.sh
