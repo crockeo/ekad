@@ -1,21 +1,19 @@
-async function build() {
-	const now = new Date();
-	console.log(now);
-	
-	console.log("Running Bun.build...");
-	await Bun.build({
-		entrypoints: ["./index.tsx"],
-		root: "./frontend",
-		outdir: "./dist",
-	});
+await Bun.write("dist/index.html", Bun.file("frontend/index.html"));
 
-	console.log("Copying index.html...");
-	await Bun.write("dist/index.html", Bun.file("frontend/index.html"));
-}
+// TODO: can we get this in-process?
+const proc = Bun.spawn(
+  [
+    "bun",
+    "run",
+    "tailwindcss",
+    "--input=./frontend/index.css",
+    "--output=./dist/index.css",
+  ],
+);
+await proc.exited;
 
-try {
-	await build();
-} catch (e) {
-	console.log("Build failed:");
-	console.log(e);
-}
+await Bun.build({
+  entrypoints: ["./frontend/index.tsx"],
+  root: "./frontend",
+  outdir: "./dist",
+});

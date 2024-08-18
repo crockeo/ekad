@@ -12,6 +12,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "classnames": "^2.5.1",
     "force-graph": "^1.43.5",
     "immutable": "^4.3.7",
     "react": "^18.3.1",
