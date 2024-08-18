@@ -14,6 +14,11 @@ pids+=($!)
 bunx serve ./dist &
 pids+=($!)
 
-open http://localhost:3000
+bun run tailwindcss \
+	--input ./frontend/index.css \
+	--output ./dist/index.css \
+	--watch \
+	&
+pids+=($!)
 
 wait ${pids[@]}

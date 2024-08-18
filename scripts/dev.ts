@@ -16,7 +16,7 @@ async function build() {
 }
 
 try {
-await build();
+	await build();
 } catch (e) {
 	console.log("Build failed:");
 	console.log(e);

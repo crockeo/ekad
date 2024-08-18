@@ -5,7 +5,8 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0"
+    "@types/react-dom": "^18.3.0",
+    "tailwindcss": "^3.4.10"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -15,7 +16,6 @@
     "immutable": "^4.3.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "styled-components": "^6.1.12",
     "uuidv7": "^1.0.1"
   }
 }

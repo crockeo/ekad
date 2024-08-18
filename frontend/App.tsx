@@ -35,10 +35,16 @@ export default function App() {
           <Button disabled={!title} type="constructive">Add</Button>
         </TaskForm>
 
-        <ul>
+        <ul className="list-disc list-inside">
           {tasks.valueSeq().map(task =>
-            <li onClick={() => setModalTask(task)} key={task.id}>{task.title}</li>)
-          }
+            <li
+              className="cursor-pointer"
+              key={task.id}
+              onClick={() => setModalTask(task)}
+            >
+              {task.title}
+            </li>
+          )}
         </ul>
       </TaskBar>
 
@@ -129,7 +135,7 @@ interface ModalTaskCardProps {
 function ModalTaskCard({ task }: ModalTaskCardProps) {
   return (
     <div>
-      <div>{task.title}</div>
+      <div className="text-lg">{task.title}</div>
       <div>{task.id}</div>
     </div>
   );
