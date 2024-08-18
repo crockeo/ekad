@@ -27,12 +27,12 @@ export interface GraphData {
 
 interface GraphViewProps {
   data: GraphData;
-  onBackgroundClick?: (event: MouseEvent) => void;
+  onNodeClick?: (node: NodeObject, event: MouseEvent) => void;
 }
 
 export default function GraphView({
   data,
-  onBackgroundClick
+  onNodeClick,
 }: GraphViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -42,7 +42,9 @@ export default function GraphView({
       .enableZoomInteraction(false)
       .graphData(data)
       .onNodeClick((node, event) => {
-        console.log(node, event);
+        if (isNodeObject(node) && onNodeClick) {
+          onNodeClick(node, event);
+        }
       })
       .onNodeDrag((node, translate) => {
         console.log(node, translate);
@@ -53,13 +55,12 @@ export default function GraphView({
           return;
         }
 
-        const fontSize = 12 / globalScale;
+        const fontSize = 6;
         ctx.font = `${fontSize}px Sans-Serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(node.name, node.x, node.y + 8);
       })
-      .onBackgroundClick((evt) => onBackgroundClick && onBackgroundClick(evt))
       .linkDirectionalArrowLength(5)
       .linkDirectionalArrowRelPos(1)
       .nodeColor((node: NodeObject) => node.nodeColor || "black");
