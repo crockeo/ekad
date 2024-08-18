@@ -8,6 +8,7 @@ interface Task {
   id: UUID;
   title: string;
   completedAt: Date | null;
+  deletedAt: Date | null;
 }
 
 enum Store {
@@ -56,6 +57,18 @@ export default function App() {
                 }}
               />
               <span>{task.title}</span>
+              <button
+                onClick={() => deleteTask(task)}
+                style={{
+                  backgroundColor: "rgba(0, 0, 0, 0)",
+                  borderStyle: "none",
+                  color: "red",
+                  cursor: "pointer",
+                  fontSize: "0.6rem",
+                }}
+              >
+                (delete)
+              </button>
             </div>
           ))}
       </ul>
@@ -74,7 +87,9 @@ export default function App() {
     let newTasks = tasks;
     req.onsuccess = () => {
       for (const task of req.result) {
-        newTasks = newTasks.set(task.id, task);
+        if (!task.deletedAt) {
+          newTasks = newTasks.set(task.id, task);
+        }
       }
       setTasks(newTasks);
     };
@@ -91,6 +106,7 @@ export default function App() {
       id: id,
       title: title,
       completedAt: null,
+      deletedAt: null,
     };
 
     setTitle("");
@@ -108,8 +124,19 @@ export default function App() {
     setTask(newTask);
   }
 
+  function deleteTask(task: Task) {
+    setTask({
+      ...task,
+      deletedAt: new Date(),
+    });
+  }
+
   function setTask(task: Task) {
-    setTasks(tasks.set(task.id, task));
+    if (task.deletedAt) {
+      setTasks(tasks.delete(task.id));
+    } else {
+      setTasks(tasks.set(task.id, task));
+    }
 
     if (!db) {
       throw new Error(`Tried to add task to DB, but it is null. ${task}`);
