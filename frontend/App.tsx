@@ -24,9 +24,9 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
     <div
       className="
       grid
-      grid-cols-3
       px-4
       py-8
+      md:grid-cols-3
       "
     >
       <div className="col-span-1 px-4">
@@ -101,14 +101,14 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
         </div>
       </div>
 
-      <div className="col-span-2 px-4">
+      <div className="col-span-2 px-4 mt-4 md:mt-0">
         {selectedTask ? (
           <SelectedTaskPane
             onChange={(task) => setTask(task)}
             task={selectedTask}
           />
         ) : (
-          <div>No task selected.</div>
+          <div className="text-gray-600 text-lg italic">No task selected.</div>
         )}
       </div>
     </div>
@@ -189,7 +189,6 @@ function SelectedTaskPane({
   onChange: (task: Task) => void;
   task: Task;
 }) {
-  const textArea = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   useEffect(() => {
@@ -197,26 +196,37 @@ function SelectedTaskPane({
     setDescription(task.description || "");
   }, [task]);
 
+  const titleArea = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
-    if (textArea.current) {
-      updateTextAreaHeight(textArea.current);
+    if (titleArea.current) {
+      updateTextAreaHeight(titleArea.current);
+    }
+  }, [title]);
+
+  const descriptionArea = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (descriptionArea.current) {
+      updateTextAreaHeight(descriptionArea.current);
     }
   }, [description]);
 
   return (
     <div>
-      <input
+      <textarea
         className="
-        focus:outline-none
         font-semibold
+        resize-none
         text-xl
         w-full
+        focus:outline-none
         "
         onChange={(e) => updateTitle(e.target.value)}
         placeholder="Title"
-        type="text"
+        ref={titleArea}
         value={title}
       />
+
+      <div className="my-2" />
 
       <textarea
         className="
@@ -228,7 +238,8 @@ function SelectedTaskPane({
         focus:outline-none
         "
         onChange={(e) => updateDescription(e.target.value)}
-        ref={textArea}
+        placeholder="Description"
+        ref={descriptionArea}
         value={description}
       ></textarea>
     </div>
@@ -236,6 +247,7 @@ function SelectedTaskPane({
 
   function updateTitle(title: string): void {
     // TODO: debounce
+    title = title.replaceAll("\n", "");
     setTitle(title);
     onChange({
       ...task,
