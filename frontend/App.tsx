@@ -9,59 +9,79 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
   const [doc, changeDoc] = useDocument<Ekad>(docUrl);
   useEffect(loadTasks, [doc]);
 
-  const [tasks, setTasks] = useState<Map<UUID, Task>>(Map());
   const [title, setTitle] = useState("");
+  const [tasks, setTasks] = useState<Map<UUID, Task>>(Map());
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   return (
-    <div>
-      <form onSubmit={newTask}>
-        <input
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title"
-          type="text"
-          value={title}
-        />
-        <button disabled={!title}>Submit</button>
-      </form>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+      }}
+    >
+      <div>
+        <form onSubmit={newTask}>
+          <input
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            type="text"
+            value={title}
+          />
+          <button disabled={!title}>Submit</button>
+        </form>
 
-      <ul>
-        {tasks
-          .valueSeq()
-          .sortBy((task) => [!!task.completedAt, task.title])
-          .map((task) => (
-            <div
-              key={task.id}
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                color: task.completedAt ? "#aaaaaa" : undefined,
-                textDecoration: task.completedAt ? "line-through" : undefined,
-              }}
-            >
-              <input
-                checked={!!task.completedAt}
-                onChange={(e) => completeTask(e, task)}
-                type="checkbox"
+        <ul>
+          {tasks
+            .valueSeq()
+            .sortBy((task) => [!!task.completedAt, task.title])
+            .map((task) => (
+              <div
+                key={task.id}
+                onClick={() => setSelectedTask(task)}
                 style={{
-                  accentColor: "#cccccc",
-                }}
-              />
-              <span>{task.title}</span>
-              <button
-                onClick={() => deleteTask(task)}
-                style={{
-                  backgroundColor: "rgba(0, 0, 0, 0)",
-                  borderStyle: "none",
-                  color: "red",
-                  cursor: "pointer",
-                  fontSize: "0.6rem",
+                  display: "flex",
+                  flexDirection: "row",
+                  color: task.completedAt ? "#aaaaaa" : undefined,
+                  textDecoration: task.completedAt ? "line-through" : undefined,
                 }}
               >
-                (delete)
-              </button>
-            </div>
-          ))}
-      </ul>
+                <input
+                  checked={!!task.completedAt}
+                  onChange={(e) => completeTask(e, task)}
+                  type="checkbox"
+                  style={{
+                    accentColor: "#cccccc",
+                  }}
+                />
+                <span>{task.title}</span>
+                <button
+                  onClick={() => deleteTask(task)}
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0)",
+                    borderStyle: "none",
+                    color: "red",
+                    cursor: "pointer",
+                    fontSize: "0.6rem",
+                  }}
+                >
+                  (delete)
+                </button>
+              </div>
+            ))}
+        </ul>
+      </div>
+
+      <div style={{ flexGrow: 1 }}>
+        {selectedTask ? (
+          <SelectedTaskPane
+            onChange={(task) => setTask(task)}
+            task={selectedTask}
+          />
+        ) : (
+          <div>No task selected.</div>
+        )}
+      </div>
     </div>
   );
 
@@ -115,6 +135,8 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
   }
 
   function setTask(task: Task) {
+    // TODO: instead of just reassigning stuff, make sure that we do updateText(...)
+    // where appropriate, for better, more efficient text replacement
     if (task.deletedAt) {
       setTasks(tasks.delete(task.id));
     } else {
@@ -126,6 +148,40 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
         doc.tasks = {};
       }
       doc.tasks[task.id] = task;
+    });
+  }
+}
+
+function SelectedTaskPane({
+  onChange,
+  task,
+}: {
+  onChange: (task: Task) => void;
+  task: Task;
+}) {
+  const [title, setTitle] = useState(task.title);
+  useEffect(() => {
+    setTitle(task.title);
+  }, [task]);
+
+  return (
+    <div>
+      <input
+        onChange={(e) => updateTitle(e.target.value)}
+        placeholder="Title"
+        style={{ width: "100%" }}
+        type="text"
+        value={title}
+      />
+    </div>
+  );
+
+  function updateTitle(title: string) {
+    // TODO: debounce
+    setTitle(title);
+    onChange({
+      ...task,
+      title: title,
     });
   }
 }
