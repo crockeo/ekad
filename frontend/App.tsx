@@ -1,7 +1,13 @@
 import type { AutomergeUrl } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
 import { Map } from "immutable";
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { uuidv7 } from "uuidv7";
 import type { Ekad, Task, UUID } from "./types";
 import classNames from "classnames";
@@ -183,12 +189,19 @@ function SelectedTaskPane({
   onChange: (task: Task) => void;
   task: Task;
 }) {
+  const textArea = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   useEffect(() => {
     setTitle(task.title);
     setDescription(task.description || "");
   }, [task]);
+
+  useEffect(() => {
+    if (textArea.current) {
+      updateTextAreaHeight(textArea.current);
+    }
+  }, [description]);
 
   return (
     <div>
@@ -212,8 +225,10 @@ function SelectedTaskPane({
         resize-none
         rounded
         w-full
+        focus:outline-none
         "
         onChange={(e) => updateDescription(e.target.value)}
+        ref={textArea}
         value={description}
       ></textarea>
     </div>
@@ -234,5 +249,10 @@ function SelectedTaskPane({
       ...task,
       description: description,
     });
+  }
+
+  function updateTextAreaHeight(element: HTMLTextAreaElement): void {
+    element.style.height = "1px";
+    element.style.height = `${element.scrollHeight}px`;
   }
 }
