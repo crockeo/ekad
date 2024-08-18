@@ -40,9 +40,10 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
                 key={task.id}
                 onClick={() => setSelectedTask(task)}
                 style={{
+                  color: task.completedAt ? "#aaaaaa" : undefined,
                   display: "flex",
                   flexDirection: "row",
-                  color: task.completedAt ? "#aaaaaa" : undefined,
+                  cursor: "pointer",
                   textDecoration: task.completedAt ? "line-through" : undefined,
                 }}
               >
