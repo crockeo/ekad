@@ -108,6 +108,7 @@ export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
     const newTask = {
       id: id,
       title: title,
+      description: "",
       completedAt: null,
       deletedAt: null,
     };
@@ -160,8 +161,10 @@ function SelectedTaskPane({
   task: Task;
 }) {
   const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description);
   useEffect(() => {
     setTitle(task.title);
+    setDescription(task.description || "");
   }, [task]);
 
   return (
@@ -173,15 +176,28 @@ function SelectedTaskPane({
         type="text"
         value={title}
       />
+
+      <textarea
+        onChange={(e) => updateDescription(e.target.value)}
+        value={description}
+      ></textarea>
     </div>
   );
 
-  function updateTitle(title: string) {
+  function updateTitle(title: string): void {
     // TODO: debounce
     setTitle(title);
     onChange({
       ...task,
       title: title,
+    });
+  }
+
+  function updateDescription(description: string): void {
+    setDescription(description);
+    onChange({
+      ...task,
+      description: description,
     });
   }
 }
