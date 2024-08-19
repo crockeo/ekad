@@ -164,16 +164,17 @@ function TaskItem({
         },
       )}
       key={task.id}
-      onClick={() => onClick(task)}
     >
-      <div>
+      <div className="flex flex-row">
         <input
           className="accent-gray-200"
           checked={!!task.completedAt}
           onChange={(e) => completeTask(e, task)}
           type="checkbox"
         />
-        <span className="px-2 select-none">{task.title}</span>
+        <div className="px-2 select-none" onClick={() => onClick(task)}>
+          {task.title}
+        </div>
       </div>
       <button
         className="cursor-pointer text-red-500 text-xs"
