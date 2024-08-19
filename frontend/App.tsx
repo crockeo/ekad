@@ -11,13 +11,13 @@ import type { Task, UUID } from "./types";
 import classNames from "classnames";
 import TaskSearcher from "./components/TaskSearcher";
 import { useDoc } from "./components/DocProvider";
+import Fold from "./components/Fold";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
   useEffect(loadTasks, [doc]);
 
   const [title, setTitle] = useState("");
-  const [tasks, setTasks] = useState<Map<UUID, Task>>(Map());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   return (
@@ -71,41 +71,14 @@ export default function App() {
         <div className="my-4" />
 
         <div className="space-y-1">
-          {tasks
-            .valueSeq()
-            .sortBy((task) => [!!task.completedAt, task.title])
-            .map((task) => (
-              <div
-                className={classNames(
-                  "cursor-pointer",
-                  "flex",
-                  "flex-row",
-                  "justify-between",
-                  {
-                    "line-through": task.completedAt,
-                    "text-gray-400": task.completedAt,
-                  },
-                )}
-                key={task.id}
-                onClick={() => setSelectedTask(task)}
-              >
-                <div>
-                  <input
-                    className="accent-gray-200"
-                    checked={!!task.completedAt}
-                    onChange={(e) => completeTask(e, task)}
-                    type="checkbox"
-                  />
-                  <span className="px-2">{task.title}</span>
-                </div>
-                <button
-                  className="cursor-pointer text-red-500 text-xs"
-                  onClick={() => deleteTask(task)}
-                >
-                  (delete)
-                </button>
-              </div>
+          {openTasks().map((task) => (
+            <TaskItem onClick={setSelectedTask} task={task} />
+          ))}
+          <Fold name="Completed Tasks">
+            {completedTasks().map((task) => (
+              <TaskItem onClick={setSelectedTask} task={task} />
             ))}
+          </Fold>
         </div>
       </div>
 
@@ -122,6 +95,18 @@ export default function App() {
     </div>
   );
 
+  function openTasks(): Task[] {
+    return Object.values(doc?.tasks).filter(
+      (task) => !task.completedAt && !task.deletedAt,
+    );
+  }
+
+  function completedTasks(): Task[] {
+    return Object.values(doc?.tasks).filter(
+      (task) => task.completedAt && !task.deletedAt,
+    );
+  }
+
   function loadTasks() {
     if (!doc?.tasks) {
       return;
@@ -132,7 +117,6 @@ export default function App() {
         tasks = tasks.set(task.id, task);
       }
     }
-    setTasks(tasks);
   }
 
   function newTask(e: FormEvent) {
@@ -153,18 +137,55 @@ export default function App() {
     };
 
     setTitle("");
-    setTask(newTask);
     changeDoc((doc) => {
       doc.tasks[newTask.id] = newTask;
     });
   }
+}
+
+function TaskItem({
+  onClick,
+  task,
+}: {
+  onClick: (task: Task) => void;
+  task: Task;
+}) {
+  const [_, changeDoc] = useDoc();
+  return (
+    <div
+      className={classNames(
+        "cursor-pointer",
+        "flex",
+        "flex-row",
+        "justify-between",
+        {
+          "line-through": task.completedAt,
+          "text-gray-400": task.completedAt,
+        },
+      )}
+      key={task.id}
+      onClick={() => onClick(task)}
+    >
+      <div>
+        <input
+          className="accent-gray-200"
+          checked={!!task.completedAt}
+          onChange={(e) => completeTask(e, task)}
+          type="checkbox"
+        />
+        <span className="px-2 select-none">{task.title}</span>
+      </div>
+      <button
+        className="cursor-pointer text-red-500 text-xs"
+        onClick={() => deleteTask(task)}
+      >
+        (delete)
+      </button>
+    </div>
+  );
 
   function completeTask(e: ChangeEvent<HTMLInputElement>, task: Task) {
     const newCompletedAt = e.target.checked ? new Date() : null;
-    setTask({
-      ...task,
-      completedAt: newCompletedAt,
-    });
     changeDoc((doc) => {
       doc.tasks[task.id].completedAt = newCompletedAt;
     });
@@ -172,21 +193,9 @@ export default function App() {
 
   function deleteTask(task: Task) {
     const newDeletedAt = new Date();
-    setTask({
-      ...task,
-      deletedAt: newDeletedAt,
-    });
     changeDoc((doc) => {
       doc.tasks[task.id].deletedAt = newDeletedAt;
     });
-  }
-
-  function setTask(task: Task) {
-    if (task.deletedAt) {
-      setTasks(tasks.delete(task.id));
-    } else {
-      setTasks(tasks.set(task.id, task));
-    }
   }
 }
 
