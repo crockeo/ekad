@@ -7,9 +7,9 @@ export default function TaskSearcher({
   ignore,
   onChooseTask,
 }: {
-  doc: Doc<Ekad>,
-  ignore: UUID[],
-  onChooseTask: (task: Task) => void,
+  doc: Doc<Ekad>;
+  ignore: UUID[];
+  onChooseTask: (task: Task) => void;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -28,7 +28,7 @@ export default function TaskSearcher({
         Add +
       </button>
 
-      {dialogOpen &&
+      {dialogOpen && (
         <>
           <div
             className="
@@ -66,7 +66,7 @@ export default function TaskSearcher({
             <hr className="my-2" />
 
             <div className="space-y-1">
-              {getMatchingTasks().map(task =>
+              {getMatchingTasks().map((task) => (
                 <div
                   className="
                 cursor-pointer
@@ -76,11 +76,11 @@ export default function TaskSearcher({
                 >
                   {task.title}
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </>
-      }
+      )}
     </>
   );
 
@@ -90,7 +90,7 @@ export default function TaskSearcher({
       if (task.completedAt || task.deletedAt) {
         continue;
       }
-      if (ignore.findIndex(id => id == task.id) != -1) {
+      if (ignore.findIndex((id) => id == task.id) != -1) {
         continue;
       }
       if (task.title.toLowerCase().includes(title.toLowerCase())) {

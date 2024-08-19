@@ -183,13 +183,13 @@ export default function App() {
         doc.tasks[to].blocks = [];
       }
 
-      if (doc.tasks[from].blockedBy.findIndex(val => val == from) == -1) {
+      if (doc.tasks[from].blockedBy.findIndex((val) => val == from) == -1) {
         doc.tasks[from].blockedBy.push(to);
       }
-      if (doc.tasks[to].blocks.findIndex(val => val == to) == -1) {
+      if (doc.tasks[to].blocks.findIndex((val) => val == to) == -1) {
         doc.tasks[to].blocks.push(from);
       }
-    })
+    });
   }
 
   function setTask(task: Task) {
@@ -273,36 +273,32 @@ function SelectedTaskPane({
       >
         <div className="space-x-2">
           <span>Blocks:</span>
-          {task.blocks?.map(id =>
+          {task.blocks?.map((id) => (
             <TaskChip
               key={id}
               onClick={() => onSelectTask(doc.tasks[id])}
-              task={doc.tasks[id]} />
-          )}
+              task={doc.tasks[id]}
+            />
+          ))}
           <TaskSearcher
             doc={doc}
-            ignore={[
-              task.id,
-              ...task.blocks || [],
-            ]}
+            ignore={[task.id, ...(task.blocks || [])]}
             onChooseTask={(chosenTask) => onAddEdge(chosenTask.id, task.id)}
           />
         </div>
 
         <div className="space-x-2">
           <span className="mr-2">Blocked by:</span>
-          {task.blockedBy?.map(id =>
+          {task.blockedBy?.map((id) => (
             <TaskChip
               key={id}
               onClick={() => onSelectTask(doc.tasks[id])}
-              task={doc.tasks[id]} />
-          )}
+              task={doc.tasks[id]}
+            />
+          ))}
           <TaskSearcher
             doc={doc}
-            ignore={[
-              task.id,
-              ...task.blockedBy || [],
-            ]}
+            ignore={[task.id, ...(task.blockedBy || [])]}
             onChooseTask={(chosenTask) => onAddEdge(task.id, chosenTask.id)}
           />
         </div>
@@ -351,7 +347,7 @@ function SelectedTaskPane({
   }
 }
 
-function TaskChip({ onClick, task }: { onClick: () => void; task: Task; }) {
+function TaskChip({ onClick, task }: { onClick: () => void; task: Task }) {
   let title = task.title;
   if (title.length > 15) {
     title = title.substring(0, 15);

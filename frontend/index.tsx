@@ -11,7 +11,7 @@ import {
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { DocProvider } from "./components/DocProvider";
 
-interface Ekad { }
+interface Ekad {}
 
 const indexedDB = new IndexedDBStorageAdapter();
 const broadcast = new BroadcastChannelNetworkAdapter();

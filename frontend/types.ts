@@ -7,8 +7,8 @@ export interface Task {
   completedAt: Date | null;
   deletedAt: Date | null;
 
-  blocks: UUID[],
-  blockedBy: UUID[],
+  blocks: UUID[];
+  blockedBy: UUID[];
 }
 
 export interface Ekad {
