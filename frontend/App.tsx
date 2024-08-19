@@ -1,5 +1,4 @@
-import type { AutomergeUrl, Doc } from "@automerge/automerge-repo";
-import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import type { Doc } from "@automerge/automerge-repo";
 import { Map } from "immutable";
 import {
   useEffect,
@@ -12,9 +11,10 @@ import { uuidv7 } from "uuidv7";
 import type { Ekad, Task, UUID } from "./types";
 import classNames from "classnames";
 import TaskSearcher from "./components/TaskSearcher";
+import { useDoc } from "./components/DocProvider";
 
-export default function App({ docUrl }: { docUrl: AutomergeUrl }) {
-  const [doc, changeDoc] = useDocument<Ekad>(docUrl);
+export default function App() {
+  const [doc, changeDoc] = useDoc();
   useEffect(loadTasks, [doc]);
 
   const [title, setTitle] = useState("");

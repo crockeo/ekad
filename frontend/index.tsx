@@ -9,8 +9,9 @@ import {
   Repo,
 } from "@automerge/automerge-repo";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+import { DocProvider } from "./components/DocProvider";
 
-interface Ekad {}
+interface Ekad { }
 
 const indexedDB = new IndexedDBStorageAdapter();
 const broadcast = new BroadcastChannelNetworkAdapter();
@@ -35,7 +36,9 @@ document.location.hash = handle.url;
 function AppWrapper() {
   return (
     <RepoContext.Provider value={openRepo()}>
-      <App docUrl={handle.url} />
+      <DocProvider docUrl={handle.url}>
+        <App />
+      </DocProvider>
     </RepoContext.Provider>
   );
 
