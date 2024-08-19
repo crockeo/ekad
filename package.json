@@ -31,6 +31,6 @@
     "uuidv7": "^1.0.1"
   },
   "scripts": {
-    "dev": "vite serve frontend/ --host=0.0.0.0"
+    "dev": "vite serve frontend/"
   }
 }

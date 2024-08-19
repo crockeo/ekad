@@ -10,6 +10,7 @@ import {
 } from "@automerge/automerge-repo";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { DocProvider } from "./components/DocProvider";
+import { getCookie, setCookie } from "./cookies";
 
 interface Ekad {}
 
@@ -21,17 +22,28 @@ const repo = new Repo({
   network: [broadcast, websocket],
 });
 
-const rootDocURL = document.location.hash.substring(1);
-let handle: DocHandle<Ekad>;
-if (isValidAutomergeUrl(rootDocURL)) {
-  handle = repo.find(rootDocURL);
-} else {
-  handle = repo.create<Ekad>({
+function getRootDocHandle(): DocHandle<Ekad> {
+  const locationHashURL = document.location.hash.substring(1);
+  if (isValidAutomergeUrl(locationHashURL)) {
+    setCookie("automergeDocumentURL", locationHashURL);
+    return repo.find(locationHashURL);
+  }
+
+  const cookieURL = getCookie("automergeDocumentURL");
+  if (isValidAutomergeUrl(cookieURL)) {
+    document.location.hash = cookieURL;
+    return repo.find(cookieURL);
+  }
+
+  const handle = repo.create<Ekad>({
     tasks: {},
-    edges: {},
   });
+  document.location.hash = handle.url;
+  setCookie("automergeDocumentURL", handle.url);
+  return handle;
 }
-document.location.hash = handle.url;
+
+const handle = getRootDocHandle();
 
 function AppWrapper() {
   return (
