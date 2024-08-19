@@ -1,4 +1,3 @@
-import type { Doc } from "@automerge/automerge-repo";
 import { Map } from "immutable";
 import {
   useEffect,
@@ -8,7 +7,7 @@ import {
   type FormEvent,
 } from "react";
 import { uuidv7 } from "uuidv7";
-import type { Ekad, Task, UUID } from "./types";
+import type { Task, UUID } from "./types";
 import classNames from "classnames";
 import TaskSearcher from "./components/TaskSearcher";
 import { useDoc } from "./components/DocProvider";
@@ -113,9 +112,6 @@ export default function App() {
       <div className="col-span-2 px-4 mt-4 md:mt-0">
         {doc && selectedTask ? (
           <SelectedTaskPane
-            doc={doc}
-            onAddEdge={addEdge}
-            onChange={(task) => setTask(task)}
             onSelectTask={setSelectedTask}
             task={selectedTask}
           />
@@ -158,73 +154,50 @@ export default function App() {
 
     setTitle("");
     setTask(newTask);
+    changeDoc((doc) => {
+      doc.tasks[newTask.id] = newTask;
+    });
   }
 
   function completeTask(e: ChangeEvent<HTMLInputElement>, task: Task) {
+    const newCompletedAt = e.target.checked ? new Date() : null;
     setTask({
       ...task,
-      completedAt: e.target.checked ? new Date() : null,
+      completedAt: newCompletedAt,
+    });
+    changeDoc((doc) => {
+      doc.tasks[task.id].completedAt = newCompletedAt;
     });
   }
 
   function deleteTask(task: Task) {
+    const newDeletedAt = new Date();
     setTask({
       ...task,
-      deletedAt: new Date(),
+      deletedAt: newDeletedAt,
     });
-  }
-
-  function addEdge(from: UUID, to: UUID): void {
     changeDoc((doc) => {
-      if (!doc.tasks[from].blockedBy) {
-        doc.tasks[from].blockedBy = [];
-      }
-      if (!doc.tasks[to].blocks) {
-        doc.tasks[to].blocks = [];
-      }
-
-      if (doc.tasks[from].blockedBy.findIndex((val) => val == from) == -1) {
-        doc.tasks[from].blockedBy.push(to);
-      }
-      if (doc.tasks[to].blocks.findIndex((val) => val == to) == -1) {
-        doc.tasks[to].blocks.push(from);
-      }
+      doc.tasks[task.id].deletedAt = newDeletedAt;
     });
   }
 
   function setTask(task: Task) {
-    // TODO: instead of just reassigning stuff, make sure that we do updateText(...)
-    // where appropriate, for better, more efficient text replacement
     if (task.deletedAt) {
       setTasks(tasks.delete(task.id));
     } else {
       setTasks(tasks.set(task.id, task));
     }
-
-    console.log(task);
-
-    changeDoc((doc) => {
-      if (!doc.tasks) {
-        doc.tasks = {};
-      }
-      doc.tasks[task.id] = task;
-    });
   }
 }
 
 function SelectedTaskPane({
-  doc,
-  onAddEdge,
-  onChange,
   onSelectTask,
   task,
 }: {
-  doc: Doc<Ekad>;
-  onAddEdge: (from: UUID, to: UUID) => void;
-  onChange: (task: Task) => void;
   onSelectTask: (task: Task) => void;
   task: Task;
 }) {
+  const [doc, changeDoc] = useDoc();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   useEffect(() => {
@@ -283,7 +256,7 @@ function SelectedTaskPane({
           <TaskSearcher
             doc={doc}
             ignore={[task.id, ...(task.blocks || [])]}
-            onChooseTask={(chosenTask) => onAddEdge(chosenTask.id, task.id)}
+            onChooseTask={(chosenTask) => addEdge(chosenTask.id, task.id)}
           />
         </div>
 
@@ -299,7 +272,7 @@ function SelectedTaskPane({
           <TaskSearcher
             doc={doc}
             ignore={[task.id, ...(task.blockedBy || [])]}
-            onChooseTask={(chosenTask) => onAddEdge(task.id, chosenTask.id)}
+            onChooseTask={(chosenTask) => addEdge(task.id, chosenTask.id)}
           />
         </div>
       </div>
@@ -323,21 +296,40 @@ function SelectedTaskPane({
     </div>
   );
 
+  function addEdge(from: UUID, to: UUID): void {
+    changeDoc((doc) => {
+      if (!doc.tasks[from].blockedBy) {
+        doc.tasks[from].blockedBy = [];
+      }
+      if (!doc.tasks[to].blocks) {
+        doc.tasks[to].blocks = [];
+      }
+
+      if (doc.tasks[from].blockedBy.findIndex((val) => val == from) == -1) {
+        doc.tasks[from].blockedBy.push(to);
+      }
+      if (doc.tasks[to].blocks.findIndex((val) => val == to) == -1) {
+        doc.tasks[to].blocks.push(from);
+      }
+    });
+  }
+
   function updateTitle(title: string): void {
     // TODO: debounce
+    // TODO: updateText instead of assigning
     title = title.replaceAll("\n", "");
     setTitle(title);
-    onChange({
-      ...task,
-      title: title,
+    changeDoc((doc) => {
+      doc.tasks[task.id].title = title;
     });
   }
 
   function updateDescription(description: string): void {
+    // TODO: debounce
+    // TODO: updateText instead of assigning
     setDescription(description);
-    onChange({
-      ...task,
-      description: description,
+    changeDoc((doc) => {
+      doc.tasks[task.id].description = description;
     });
   }
 
