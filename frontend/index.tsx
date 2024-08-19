@@ -27,6 +27,7 @@ if (isValidAutomergeUrl(rootDocURL)) {
 } else {
   handle = repo.create<Ekad>({
     tasks: {},
+    edges: {},
   });
 }
 document.location.hash = handle.url;

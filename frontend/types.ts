@@ -6,8 +6,11 @@ export interface Task {
   description: string;
   completedAt: Date | null;
   deletedAt: Date | null;
+
+  blocks: UUID[],
+  blockedBy: UUID[],
 }
 
 export interface Ekad {
-  tasks: { [key: UUID]: Task };
+  tasks: { [id: UUID]: Task };
 }
