@@ -15,10 +15,9 @@ import Fold from "./components/Fold";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
-  useEffect(loadTasks, [doc]);
 
   const [title, setTitle] = useState("");
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
 
   return (
     <div
@@ -107,18 +106,6 @@ export default function App() {
     );
   }
 
-  function loadTasks() {
-    if (!doc?.tasks) {
-      return;
-    }
-    let tasks = Map<UUID, Task>();
-    for (const task of Object.values(doc.tasks)) {
-      if (!task.deletedAt) {
-        tasks = tasks.set(task.id, task);
-      }
-    }
-  }
-
   function newTask(e: FormEvent) {
     e.preventDefault();
     if (!doc) {
@@ -147,7 +134,7 @@ function TaskItem({
   onClick,
   task,
 }: {
-  onClick: (task: Task) => void;
+  onClick: (task: UUID) => void;
   task: Task;
 }) {
   const [_, changeDoc] = useDoc();
@@ -172,7 +159,7 @@ function TaskItem({
           onChange={(e) => completeTask(e, task)}
           type="checkbox"
         />
-        <div className="px-2 select-none" onClick={() => onClick(task)}>
+        <div className="px-2 select-none" onClick={() => onClick(task.id)}>
           {task.title}
         </div>
       </div>
@@ -196,6 +183,20 @@ function TaskItem({
     const newDeletedAt = new Date();
     changeDoc((doc) => {
       doc.tasks[task.id].deletedAt = newDeletedAt;
+
+      // TODO: test that this works? and maybe pull it out into a generic "remove edge" function?
+      for (const blocks of doc.tasks[task.id].blocks) {
+        const pos = doc.tasks[blocks].blockedBy.indexOf(task.id);
+        if (pos != -1) {
+          doc.tasks[blocks].blockedBy.splice(pos, 1);
+        }
+      }
+      for (const blockedBy of doc.tasks[task.id].blockedBy) {
+        const pos = doc.tasks[blockedBy].blocks.indexOf(task.id);
+        if (pos != -1) {
+          doc.tasks[blockedBy].blockedBy.splice(pos, 1);
+        }
+      }
     });
   }
 }
@@ -204,30 +205,24 @@ function SelectedTaskPane({
   onSelectTask,
   task,
 }: {
-  onSelectTask: (task: Task) => void;
-  task: Task;
+  onSelectTask: (task: UUID) => void;
+  task: UUID;
 }) {
   const [doc, changeDoc] = useDoc();
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description);
-  useEffect(() => {
-    setTitle(task.title);
-    setDescription(task.description || "");
-  }, [task]);
 
   const titleArea = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (titleArea.current) {
       updateTextAreaHeight(titleArea.current);
     }
-  }, [title]);
+  }, [doc.tasks[task].title]);
 
   const descriptionArea = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (descriptionArea.current) {
       updateTextAreaHeight(descriptionArea.current);
     }
-  }, [description]);
+  }, [doc.tasks[task].description]);
 
   return (
     <div>
@@ -242,7 +237,7 @@ function SelectedTaskPane({
         onChange={(e) => updateTitle(e.target.value)}
         placeholder="Title"
         ref={titleArea}
-        value={title}
+        value={doc.tasks[task].title}
       />
 
       <div className="my-2" />
@@ -256,33 +251,33 @@ function SelectedTaskPane({
       >
         <div className="space-x-2">
           <span>Blocks:</span>
-          {task.blocks?.map((id) => (
+          {doc.tasks[task].blocks?.map((id) => (
             <TaskChip
               key={id}
-              onClick={() => onSelectTask(doc.tasks[id])}
+              onClick={() => onSelectTask(id)}
               task={doc.tasks[id]}
             />
           ))}
           <TaskSearcher
             doc={doc}
-            ignore={[task.id, ...(task.blocks || [])]}
-            onChooseTask={(chosenTask) => addEdge(chosenTask.id, task.id)}
+            ignore={[task, ...(doc.tasks[task].blocks || [])]}
+            onChooseTask={(chosenTask) => addEdge(chosenTask, task)}
           />
         </div>
 
         <div className="space-x-2">
           <span className="mr-2">Blocked by:</span>
-          {task.blockedBy?.map((id) => (
+          {doc.tasks[task].blockedBy?.map((id) => (
             <TaskChip
               key={id}
-              onClick={() => onSelectTask(doc.tasks[id])}
+              onClick={() => onSelectTask(id)}
               task={doc.tasks[id]}
             />
           ))}
           <TaskSearcher
             doc={doc}
-            ignore={[task.id, ...(task.blockedBy || [])]}
-            onChooseTask={(chosenTask) => addEdge(task.id, chosenTask.id)}
+            ignore={[task, ...(doc.tasks[task].blockedBy || [])]}
+            onChooseTask={(chosenTask) => addEdge(task, chosenTask)}
           />
         </div>
       </div>
@@ -301,7 +296,7 @@ function SelectedTaskPane({
         onChange={(e) => updateDescription(e.target.value)}
         placeholder="Description"
         ref={descriptionArea}
-        value={description}
+        value={doc.tasks[task].description}
       ></textarea>
     </div>
   );
@@ -328,18 +323,16 @@ function SelectedTaskPane({
     // TODO: debounce
     // TODO: updateText instead of assigning
     title = title.replaceAll("\n", "");
-    setTitle(title);
     changeDoc((doc) => {
-      doc.tasks[task.id].title = title;
+      doc.tasks[task].title = title;
     });
   }
 
   function updateDescription(description: string): void {
     // TODO: debounce
     // TODO: updateText instead of assigning
-    setDescription(description);
     changeDoc((doc) => {
-      doc.tasks[task.id].description = description;
+      doc.tasks[task].description = description;
     });
   }
 
@@ -357,14 +350,17 @@ function TaskChip({ onClick, task }: { onClick: () => void; task: Task }) {
   }
   return (
     <span
-      className="
-      bg-gray-200
-      cursor-pointer
-      px-2
-      py-1
-      rounded-lg
-      text-gray-500
-      "
+      className={classNames(
+        "bg-gray-200",
+        "cursor-pointer",
+        "px-2",
+        "py-1",
+        "rounded-lg",
+        "text-gray-500",
+        {
+          "line-through": task.completedAt,
+        },
+      )}
       key={task.id}
       onClick={() => onClick()}
     >

@@ -9,7 +9,7 @@ export default function TaskSearcher({
 }: {
   doc: Doc<Ekad>;
   ignore: UUID[];
-  onChooseTask: (task: Task) => void;
+  onChooseTask: (task: UUID) => void;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -107,6 +107,6 @@ export default function TaskSearcher({
 
   function chooseTask(task: Task): void {
     close();
-    onChooseTask(task);
+    onChooseTask(task.id);
   }
 }
