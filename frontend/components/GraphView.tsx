@@ -36,6 +36,8 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
       return;
     }
     graph.current
+      .dagMode("lr")
+      .dagLevelDistance(30)
       .enableZoomInteraction(false)
       .graphData(data)
       .onNodeClick((node, event) => {
