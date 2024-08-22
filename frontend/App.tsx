@@ -12,6 +12,7 @@ import classNames from "classnames";
 import TaskSearcher from "./components/TaskSearcher";
 import { useDoc } from "./components/DocProvider";
 import Fold from "./components/Fold";
+import TaskGraphView from "./components/TaskGraphView";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
@@ -71,11 +72,11 @@ export default function App() {
 
         <div className="space-y-1">
           {openTasks().map((task) => (
-            <TaskItem onClick={setSelectedTask} task={task} />
+            <TaskItem key={task.id} onClick={setSelectedTask} task={task} />
           ))}
           <Fold name="Completed Tasks">
             {completedTasks().map((task) => (
-              <TaskItem onClick={setSelectedTask} task={task} />
+              <TaskItem key={task.id} onClick={setSelectedTask} task={task} />
             ))}
           </Fold>
         </div>
@@ -90,6 +91,10 @@ export default function App() {
         ) : (
           <div className="text-gray-600 text-lg italic">No task selected.</div>
         )}
+      </div>
+
+      <div className="col-span-3">
+        <TaskGraphView />
       </div>
     </div>
   );

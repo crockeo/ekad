@@ -87,7 +87,7 @@ export default function TaskSearcher({
   function getMatchingTasks(): Task[] {
     const matchingTasks = [];
     for (const task of Object.values(doc.tasks)) {
-      if (task.completedAt || task.deletedAt) {
+      if (task.deletedAt) {
         continue;
       }
       if (ignore.findIndex((id) => id == task.id) != -1) {

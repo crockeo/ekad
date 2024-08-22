@@ -1,4 +1,5 @@
 import ForceGraph, {
+  type ForceGraphInstance,
   type LinkObject as ForceGraphLinkObject,
   type NodeObject as ForceGraphNodeObject,
 } from "force-graph";
@@ -28,12 +29,13 @@ interface GraphViewProps {
 
 export default function GraphView({ data, onNodeClick }: GraphViewProps) {
   const ref = useRef<HTMLDivElement>(null);
+  let graph = useRef<ForceGraphInstance>(ForceGraph());
+
   useEffect(() => {
     if (!ref.current) {
       return;
     }
-
-    const graph = ForceGraph()
+    graph.current
       .enableZoomInteraction(false)
       .graphData(data)
       .onNodeClick((node, event) => {
@@ -50,7 +52,7 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
           return;
         }
 
-        const fontSize = 6;
+        const fontSize = Math.min(4, 12 / globalScale);
         ctx.font = `${fontSize}px Sans-Serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -59,7 +61,7 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
       .linkDirectionalArrowLength(5)
       .linkDirectionalArrowRelPos(1)
       .nodeColor((node: NodeObject) => node.nodeColor || "black");
-    graph(ref.current);
+    graph.current(ref.current);
 
     function onWheel(event: WheelEvent) {
       if (!ref.current) {
@@ -68,8 +70,8 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
 
       event.preventDefault();
 
-      let zoom = graph.zoom();
-      let { x, y } = graph.centerAt();
+      let zoom = graph.current.zoom();
+      let { x, y } = graph.current.centerAt();
       if (event.ctrlKey) {
         // Magic: macOS and Windows laptops with zoom
         // set `WheelEvent.ctrlKey = true`
@@ -95,16 +97,16 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
         x += event.deltaX / zoom;
         y += event.deltaY / zoom;
       }
-      graph.zoom(zoom);
-      graph.centerAt(x, y);
+      graph.current.zoom(zoom);
+      graph.current.centerAt(x, y);
     }
 
     const resizeObserver = new ResizeObserver(() => {
       if (!ref.current) {
         return;
       }
-      graph.width(ref.current.clientWidth);
-      graph.height(ref.current.clientHeight);
+      graph.current.width(ref.current.clientWidth);
+      graph.current.height(ref.current.clientHeight);
     });
 
     ref.current.addEventListener("wheel", onWheel);
@@ -117,7 +119,35 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
       ref.current.removeEventListener("wheel", onWheel);
       resizeObserver.disconnect();
     };
+  }, []);
+
+  useEffect(() => {
+    const newNodes: Map<string, NodeObject> = new Map();
+    for (const node of data.nodes) {
+      newNodes.set(node.id, node);
+    }
+
+    const newData: GraphData = {
+      nodes: [],
+      links: data.links,
+    };
+    for (const node of graph.current.graphData().nodes) {
+      if (!isNodeObject(node)) {
+        throw new Error("TODO: better error message; unexpected type here");
+      }
+      const newNode = newNodes.get(node.id);
+      newData.nodes.push({
+        ...node,
+        ...newNode,
+      });
+    }
+
+    graph.current.graphData(newData);
   }, [data]);
 
-  return <div ref={ref} />;
+  return (
+    <div className="border m-4 rounded">
+      <div ref={ref} />
+    </div>
+  );
 }
