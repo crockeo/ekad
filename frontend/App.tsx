@@ -1,11 +1,4 @@
-import { Map } from "immutable";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { uuidv7 } from "uuidv7";
 import type { Task, UUID } from "./types";
 import classNames from "classnames";
@@ -13,6 +6,7 @@ import TaskSearcher from "./components/TaskSearcher";
 import { useDoc } from "./components/DocProvider";
 import Fold from "./components/Fold";
 import TaskGraphView from "./components/TaskGraphView";
+import TaskCard from "./components/TaskCard";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
@@ -72,11 +66,11 @@ export default function App() {
 
         <div className="space-y-1">
           {openTasks().map((task) => (
-            <TaskItem key={task.id} onClick={setSelectedTask} task={task} />
+            <TaskCard key={task.id} onClick={setSelectedTask} task={task} />
           ))}
           <Fold name="Completed Tasks">
             {completedTasks().map((task) => (
-              <TaskItem key={task.id} onClick={setSelectedTask} task={task} />
+              <TaskCard key={task.id} onClick={setSelectedTask} task={task} />
             ))}
           </Fold>
         </div>
@@ -131,77 +125,6 @@ export default function App() {
     setTitle("");
     changeDoc((doc) => {
       doc.tasks[newTask.id] = newTask;
-    });
-  }
-}
-
-function TaskItem({
-  onClick,
-  task,
-}: {
-  onClick: (task: UUID) => void;
-  task: Task;
-}) {
-  const [_, changeDoc] = useDoc();
-  return (
-    <div
-      className={classNames(
-        "cursor-pointer",
-        "flex",
-        "flex-row",
-        "justify-between",
-        {
-          "line-through": task.completedAt,
-          "text-gray-400": task.completedAt,
-        },
-      )}
-      key={task.id}
-    >
-      <div className="flex flex-row">
-        <input
-          className="accent-gray-200"
-          checked={!!task.completedAt}
-          onChange={(e) => completeTask(e, task)}
-          type="checkbox"
-        />
-        <div className="px-2 select-none" onClick={() => onClick(task.id)}>
-          {task.title}
-        </div>
-      </div>
-      <button
-        className="cursor-pointer text-red-500 text-xs"
-        onClick={() => deleteTask(task)}
-      >
-        (delete)
-      </button>
-    </div>
-  );
-
-  function completeTask(e: ChangeEvent<HTMLInputElement>, task: Task) {
-    const newCompletedAt = e.target.checked ? new Date() : null;
-    changeDoc((doc) => {
-      doc.tasks[task.id].completedAt = newCompletedAt;
-    });
-  }
-
-  function deleteTask(task: Task) {
-    const newDeletedAt = new Date();
-    changeDoc((doc) => {
-      doc.tasks[task.id].deletedAt = newDeletedAt;
-
-      // TODO: test that this works? and maybe pull it out into a generic "remove edge" function?
-      for (const blocks of doc.tasks[task.id].blocks) {
-        const pos = doc.tasks[blocks].blockedBy.indexOf(task.id);
-        if (pos != -1) {
-          doc.tasks[blocks].blockedBy.splice(pos, 1);
-        }
-      }
-      for (const blockedBy of doc.tasks[task.id].blockedBy) {
-        const pos = doc.tasks[blockedBy].blocks.indexOf(task.id);
-        if (pos != -1) {
-          doc.tasks[blockedBy].blockedBy.splice(pos, 1);
-        }
-      }
     });
   }
 }
@@ -362,6 +285,7 @@ function TaskChip({ onClick, task }: { onClick: () => void; task: Task }) {
         "py-1",
         "rounded-lg",
         "text-gray-500",
+        "text-xs",
         {
           "line-through": task.completedAt,
         },
