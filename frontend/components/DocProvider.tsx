@@ -1,11 +1,12 @@
-import { createContext, type PropsWithChildren, useContext } from "react";
 import {
   type AutomergeUrl,
   type Doc,
   type ChangeFn,
 } from "@automerge/automerge-repo";
-import type { Ekad } from "../types";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
+import { createContext, type PropsWithChildren, useContext } from "react";
+
+import type { Ekad } from "../types";
 
 type changeDocFn = (changeFn: ChangeFn<Ekad>, options?: any) => void;
 const docContext = createContext<[Doc<Ekad>, changeDocFn] | null>(null);

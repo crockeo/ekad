@@ -1,6 +1,7 @@
-import { DirectedGraph } from "graphology";
-import type { Ekad } from "./types";
 import type { Doc } from "@automerge/automerge-repo";
+import { DirectedGraph } from "graphology";
+
+import type { Ekad } from "./types";
 
 // taskGraph takes the list representation of tasks inside of an Automerge document
 // and converts them into a graphology DirectedGraph.

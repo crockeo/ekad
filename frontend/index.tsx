@@ -1,14 +1,15 @@
-import * as ReactDOM from "react-dom/client";
-import App from "./App";
-import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
-import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
-import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 import {
   DocHandle,
   isValidAutomergeUrl,
   Repo,
 } from "@automerge/automerge-repo";
+import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
+import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 import { RepoContext } from "@automerge/automerge-repo-react-hooks";
+import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
+import * as ReactDOM from "react-dom/client";
+
+import App from "./App";
 import { DocProvider } from "./components/DocProvider";
 import { getCookie, setCookie } from "./cookies";
 

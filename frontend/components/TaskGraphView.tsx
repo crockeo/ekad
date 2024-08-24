@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+
+import { buildTaskGraph } from "../utils";
 import { useDoc } from "./DocProvider";
 import GraphView, { type GraphData } from "./GraphView";
-import { buildTaskGraph } from "../utils";
 
 export default function TaskGraphView() {
   const [doc, _] = useDoc();

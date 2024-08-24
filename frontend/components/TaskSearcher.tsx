@@ -1,5 +1,6 @@
-import { useState } from "react";
 import { type Doc } from "@automerge/automerge-repo";
+import { useState } from "react";
+
 import type { Ekad, Task, UUID } from "../types";
 
 export default function TaskSearcher({

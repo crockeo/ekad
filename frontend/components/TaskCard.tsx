@@ -1,8 +1,9 @@
 // Defines the TaskCard component, which lives on the left-hand-side of the main view.
 import classNames from "classnames";
+import type { ChangeEvent } from "react";
+
 import { type Task, type UUID } from "../types";
 import { useDoc } from "./DocProvider";
-import type { ChangeEvent } from "react";
 
 export default function TaskCard({
   isSelected,

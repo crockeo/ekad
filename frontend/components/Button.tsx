@@ -1,5 +1,6 @@
 import { type PropsWithChildren } from "react";
 import styled from "styled-components";
+
 import useTheme, { type Theme } from "../theme";
 
 type ButtonType = "primary" | "secondary" | "constructive" | "destructive";

@@ -1,15 +1,16 @@
+import classNames from "classnames";
+import { topologicalGenerations } from "graphology-dag";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { uuidv7 } from "uuidv7";
-import type { Task, UUID } from "./types";
-import classNames from "classnames";
-import TaskSearcher from "./components/TaskSearcher";
+
 import { useDoc } from "./components/DocProvider";
 import Fold from "./components/Fold";
-import TaskGraphView from "./components/TaskGraphView";
 import TaskCard from "./components/TaskCard";
+import TaskGraphView from "./components/TaskGraphView";
+import TaskSearcher from "./components/TaskSearcher";
 import TextInput from "./components/TextInput";
+import type { Task, UUID } from "./types";
 import { buildTaskGraph, sortBy } from "./utils";
-import { topologicalGenerations } from "graphology-dag";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
