@@ -5,7 +5,7 @@ import GraphView, { type GraphData } from "./GraphView";
 
 export default function TaskGraphView() {
   const [doc, _] = useDoc();
-  const [showCompleted, setShowCompleted] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [graphData, setGraphData] = useState(buildGraphData());
   useEffect(() => {
     setGraphData(buildGraphData());
@@ -33,6 +33,9 @@ export default function TaskGraphView() {
       }
       graph.mergeNode(task.id);
       for (const blockedBy of task.blockedBy || []) {
+        if (doc.tasks[blockedBy].deletedAt) {
+          continue;
+        }
         graph.mergeNode(blockedBy);
         graph.mergeEdge(task.id, blockedBy);
       }
