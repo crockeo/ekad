@@ -8,8 +8,8 @@ import Fold from "./components/Fold";
 import TaskGraphView from "./components/TaskGraphView";
 import TaskCard from "./components/TaskCard";
 import TextInput from "./components/TextInput";
-import { buildTaskGraph } from "./utils";
-import { topologicalSort } from "graphology-dag";
+import { buildTaskGraph, sortBy } from "./utils";
+import { topologicalGenerations, topologicalSort } from "graphology-dag";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
@@ -104,16 +104,13 @@ export default function App() {
   );
 
   function openTasks(): Task[] {
-    // TODO: can't enable this until i can remove relationships :/
-    // because I've accidentally added a cycle
-    //
-    // const graph = buildTaskGraph(doc);
-    // const order = topologicalSort(graph);
-    // return order.map((taskID) => doc?.tasks[taskID]);
-
-    return Object.values(doc?.tasks).filter(
-      (task) => !task.completedAt && !task.deletedAt,
-    );
+    const graph = buildTaskGraph(doc);
+    const order = [];
+    for (const generation of topologicalGenerations(graph).toReversed()) {
+      sortBy(generation, (id) => doc?.tasks[id].title);
+      order.push(...generation);
+    }
+    return order.map((taskID) => doc?.tasks[taskID]);
   }
 
   function completedTasks(): Task[] {

@@ -51,3 +51,40 @@ export function buildTaskGraph(
 
   return graph;
 }
+
+// sortBy sorts the contents of `arr` in place
+// by the value `sortKey` returns on the type.
+export function sortBy<T, U>(
+  arr: T[],
+  sortKey: (t: T) => U,
+  options?: { ascending?: boolean },
+): void {
+  if (!options) {
+    options = {};
+  }
+  options = {
+    ascending: true,
+    ...options,
+  };
+
+  let bigger, smaller;
+  if (options.ascending) {
+    bigger = 1;
+    smaller = -1;
+  } else {
+    bigger = -1;
+    smaller = 1;
+  }
+
+  arr.sort((a, b) => {
+    const aSortKey = sortKey(a);
+    const bSortKey = sortKey(b);
+    if (aSortKey == bSortKey) {
+      return 0;
+    } else if (aSortKey > bSortKey) {
+      return bigger;
+    } else {
+      return smaller;
+    }
+  });
+}
