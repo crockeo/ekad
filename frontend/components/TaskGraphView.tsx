@@ -1,7 +1,7 @@
-import { DirectedGraph } from "graphology";
 import { useEffect, useState } from "react";
 import { useDoc } from "./DocProvider";
 import GraphView, { type GraphData } from "./GraphView";
+import { buildTaskGraph } from "../utils";
 
 export default function TaskGraphView() {
   const [doc, _] = useDoc();
@@ -26,36 +26,7 @@ export default function TaskGraphView() {
   );
 
   function buildGraphData(): GraphData {
-    const graph = new DirectedGraph();
-    for (const task of Object.values(doc.tasks)) {
-      if (task.deletedAt) {
-        continue;
-      }
-      graph.mergeNode(task.id);
-      for (const blockedBy of task.blockedBy || []) {
-        if (doc.tasks[blockedBy].deletedAt) {
-          continue;
-        }
-        graph.mergeNode(blockedBy);
-        graph.mergeEdge(task.id, blockedBy);
-      }
-    }
-
-    if (!showCompleted) {
-      for (const node of graph.nodes()) {
-        if (!doc.tasks[node].completedAt) {
-          continue;
-        }
-
-        for (const inboundNeighbor of graph.inboundNeighbors(node)) {
-          for (const outboundNeighbor of graph.outboundNeighbors(node)) {
-            graph.mergeEdge(inboundNeighbor, outboundNeighbor);
-          }
-        }
-        graph.dropNode(node);
-      }
-    }
-
+    const graph = buildTaskGraph(doc, { showCompleted: showCompleted });
     const graphData: GraphData = {
       nodes: [],
       links: [],

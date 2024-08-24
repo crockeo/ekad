@@ -69,8 +69,8 @@ export default function TaskSearcher({
               {getMatchingTasks().map((task) => (
                 <div
                   className="
-                cursor-pointer
-                "
+                  cursor-pointer
+                  "
                   key={task.id}
                   onClick={() => chooseTask(task)}
                 >
@@ -87,7 +87,7 @@ export default function TaskSearcher({
   function getMatchingTasks(): Task[] {
     const matchingTasks = [];
     for (const task of Object.values(doc.tasks)) {
-      if (task.deletedAt) {
+      if (task.completedAt || task.deletedAt) {
         continue;
       }
       if (ignore.findIndex((id) => id == task.id) != -1) {

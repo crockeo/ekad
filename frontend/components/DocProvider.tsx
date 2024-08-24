@@ -28,7 +28,9 @@ export function DocProvider({
 export function useDoc(): [Doc<Ekad>, changeDocFn] {
   const doc = useContext(docContext);
   if (!doc) {
-    throw new Error("");
+    throw new Error(
+      "Cannot find Automerge document from context. Are you missing a DocProvider?",
+    );
   }
   return doc;
 }
