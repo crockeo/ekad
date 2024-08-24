@@ -5,9 +5,11 @@ import { useDoc } from "./DocProvider";
 import type { ChangeEvent } from "react";
 
 export default function TaskCard({
+  isSelected,
   onClick,
   task,
 }: {
+  isSelected: boolean;
   onClick: (task: UUID) => void;
   task: Task;
 }) {
@@ -31,6 +33,8 @@ export default function TaskCard({
         "hover:bg-gray-100",
         "active:[&:not(:focus-within)]:border-gray-400",
         {
+          "bg-gray-100": isSelected,
+          "border-gray-400": isSelected,
           "line-through": task.completedAt,
           "text-gray-400": task.completedAt,
         },

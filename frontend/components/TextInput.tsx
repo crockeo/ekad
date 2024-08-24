@@ -1,9 +1,8 @@
-import styled from "styled-components";
-import useTheme from "../theme";
+import type { ChangeEvent } from "react";
 
 interface TextInputProps {
   placeholder?: string;
-  onChange: (newValue: string) => void;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   value: string;
 }
 
@@ -12,29 +11,22 @@ export default function TextInput({
   onChange,
   value,
 }: TextInputProps) {
-  const theme = useTheme();
   return (
-    <StyledInput
-      $borderColor={theme.colors.text}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
+    <input
+      className="
+      border
+      border-gray-200
+      grow
+      p-2
+      rounded
+      transition
+      focus:border-gray-400
+      focus:outline-none
+      "
       type="text"
+      onChange={onChange}
+      placeholder={placeholder}
       value={value}
     />
   );
 }
-
-interface StyledInputProps {
-  $borderColor: string;
-}
-
-const StyledInput = styled.input<StyledInputProps>`
-  border-color: ${({ $borderColor }) => $borderColor};
-  border-radius: 0.3rem;
-  border-style: solid;
-  border-width: 1px;
-  padding: 0.5rem 0.7rem;
-  &:focus {
-    outline: none;
-  }
-`;

@@ -7,6 +7,7 @@ import { useDoc } from "./components/DocProvider";
 import Fold from "./components/Fold";
 import TaskGraphView from "./components/TaskGraphView";
 import TaskCard from "./components/TaskCard";
+import TextInput from "./components/TextInput";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
@@ -25,18 +26,9 @@ export default function App() {
     >
       <div className="col-span-1 px-4">
         <form className="flex flex-row" onSubmit={newTask}>
-          <input
-            className="
-            border
-            grow
-            rounded
-            p-2
-            text-md
-            focus:outline-none
-            "
+          <TextInput
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title"
-            type="text"
             value={title}
           />
 
@@ -44,21 +36,27 @@ export default function App() {
 
           <button
             className={classNames(
-              "bg-emerald-500",
+              "border",
+              "border-transparent",
               "px-4",
               "py-2",
               "rounded",
-              "text-white",
+              "text-emerald-500",
+              "transition",
+              "font-bold",
               {
-                "bg-gray-300": !title,
+                "text-gray-300": !title,
+                "border-gray-300": !title,
+                "border-emerald-500": !!title,
                 "cursor-pointer": !!title,
-                "hover:bg-emerald-600": !!title,
-                "active:bg-emerald-700": !!title,
+                "hover:bg-emerald-100": !!title,
+                "active:bg-emerald-200": !!title,
+                "active:border-emerald-500": !!title,
               },
             )}
             disabled={!title}
           >
-            Submit
+            Add
           </button>
         </form>
 
@@ -66,11 +64,21 @@ export default function App() {
 
         <div className="space-y-1">
           {openTasks().map((task) => (
-            <TaskCard key={task.id} onClick={setSelectedTask} task={task} />
+            <TaskCard
+              isSelected={selectedTask == task.id}
+              key={task.id}
+              onClick={setSelectedTask}
+              task={task}
+            />
           ))}
           <Fold name="Completed Tasks">
             {completedTasks().map((task) => (
-              <TaskCard key={task.id} onClick={setSelectedTask} task={task} />
+              <TaskCard
+                isSelected={selectedTask == task.id}
+                key={task.id}
+                onClick={setSelectedTask}
+                task={task}
+              />
             ))}
           </Fold>
         </div>
