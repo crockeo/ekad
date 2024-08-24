@@ -45,9 +45,6 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
           onNodeClick(node, event);
         }
       })
-      .onNodeDrag((node, translate) => {
-        console.log(node, translate);
-      })
       .nodeCanvasObjectMode(() => "after")
       .nodeCanvasObject((node, ctx, globalScale) => {
         if (!isNodeObject(node) || !node.x || !node.y) {
@@ -124,22 +121,22 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
   }, []);
 
   useEffect(() => {
-    const newNodes: Map<string, NodeObject> = new Map();
-    for (const node of data.nodes) {
-      newNodes.set(node.id, node);
+    const currentNodes = new Map<string, NodeObject>();
+    for (const currentNode of graph.current.graphData().nodes) {
+      if (!isNodeObject(currentNode)) {
+        throw new Error("TODO: better error message; unexpected type here");
+      }
+      currentNodes.set(currentNode.id, currentNode);
     }
 
     const newData: GraphData = {
       nodes: [],
       links: data.links,
     };
-    for (const node of graph.current.graphData().nodes) {
-      if (!isNodeObject(node)) {
-        throw new Error("TODO: better error message; unexpected type here");
-      }
-      const newNode = newNodes.get(node.id);
+    for (const newNode of data.nodes) {
+      const currentNode = currentNodes.get(newNode.id);
       newData.nodes.push({
-        ...node,
+        ...(currentNode || {}),
         ...newNode,
       });
     }
@@ -147,9 +144,5 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
     graph.current.graphData(newData);
   }, [data]);
 
-  return (
-    <div className="border m-4 rounded">
-      <div ref={ref} />
-    </div>
-  );
+  return <div ref={ref} />;
 }
