@@ -9,7 +9,7 @@ import TaskGraphView from "./components/TaskGraphView";
 import TaskCard from "./components/TaskCard";
 import TextInput from "./components/TextInput";
 import { buildTaskGraph, sortBy } from "./utils";
-import { topologicalGenerations, topologicalSort } from "graphology-dag";
+import { topologicalGenerations } from "graphology-dag";
 
 export default function App() {
   const [doc, changeDoc] = useDoc();
