@@ -200,6 +200,7 @@ function SelectedTaskPane({
             <TaskChip
               key={id}
               onClick={() => onSelectTask(id)}
+              onRemove={() => removeEdge(id, task)}
               task={doc.tasks[id]}
             />
           ))}
@@ -216,6 +217,7 @@ function SelectedTaskPane({
             <TaskChip
               key={id}
               onClick={() => onSelectTask(id)}
+              onRemove={() => removeEdge(task, id)}
               task={doc.tasks[id]}
             />
           ))}
@@ -264,6 +266,35 @@ function SelectedTaskPane({
     });
   }
 
+  function removeEdge(from: UUID, to: UUID): void {
+    changeDoc((doc) => {
+      // For some reason `.indexOf` isn't working here,
+      // despite these UUIDs existing in the arrays.
+      // So we're manually finding the index and splicing :/
+      let blockedByIndex = -1;
+      for (let i = 0; i < doc.tasks[from].blockedBy.length; i++) {
+        if (doc.tasks[from].blockedBy[i] == to) {
+          blockedByIndex = i;
+          break;
+        }
+      }
+      if (blockedByIndex >= 0) {
+        doc.tasks[from].blockedBy.splice(blockedByIndex);
+      }
+
+      let blocksIndex = -1;
+      for (let i = 0; i < doc.tasks[to].blocks.length; i++) {
+        if (doc.tasks[to].blocks[i] == from) {
+          blocksIndex = i;
+          break;
+        }
+      }
+      if (blocksIndex) {
+        doc.tasks[to].blocks.splice(blocksIndex);
+      }
+    });
+  }
+
   function updateTitle(title: string): void {
     // TODO: debounce
     // TODO: updateText instead of assigning
@@ -287,7 +318,15 @@ function SelectedTaskPane({
   }
 }
 
-function TaskChip({ onClick, task }: { onClick: () => void; task: Task }) {
+function TaskChip({
+  onClick,
+  onRemove,
+  task,
+}: {
+  onClick: () => void;
+  onRemove: () => void;
+  task: Task;
+}) {
   let title = task.title;
   if (title.length > 15) {
     title = title.substring(0, 15);
@@ -296,13 +335,22 @@ function TaskChip({ onClick, task }: { onClick: () => void; task: Task }) {
   return (
     <span
       className={classNames(
+        "inline-flex",
+        "flex-row",
+        "items-center",
         "bg-gray-200",
+        "border",
+        "border-transparent",
         "cursor-pointer",
         "px-2",
         "py-1",
         "rounded-lg",
+        "select-none",
         "text-gray-500",
         "text-xs",
+        "transition",
+        "hover:bg-gray-100",
+        "active:[&:not(:focus-within)]:border-gray-400",
         {
           "line-through": task.completedAt,
         },
@@ -311,6 +359,25 @@ function TaskChip({ onClick, task }: { onClick: () => void; task: Task }) {
       onClick={() => onClick()}
     >
       {title}
+      <button
+        className="
+        border
+        border-transparent
+        h-4
+        ml-2
+        rounded-full
+        transition
+        w-4
+        hover:bg-gray-200
+        active:border-gray-500
+        "
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+      >
+        ×
+      </button>
     </span>
   );
 }
