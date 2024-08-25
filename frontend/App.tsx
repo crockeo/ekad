@@ -141,6 +141,7 @@ export default function App() {
     changeDoc((doc) => {
       doc.tasks[newTask.id] = newTask;
     });
+    setSelectedTask(newTask.id);
   }
 }
 
