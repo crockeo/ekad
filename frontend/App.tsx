@@ -3,6 +3,7 @@ import { topologicalGenerations } from "graphology-dag";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { uuidv7 } from "uuidv7";
 
+import Button from "./components/Button";
 import { useDoc } from "./components/DocProvider";
 import Fold from "./components/Fold";
 import TaskCard from "./components/TaskCard";
@@ -37,30 +38,9 @@ export default function App() {
 
           <div className="mx-2" />
 
-          <button
-            className={classNames(
-              "border",
-              "border-transparent",
-              "px-4",
-              "py-2",
-              "rounded",
-              "text-emerald-500",
-              "transition",
-              "font-bold",
-              {
-                "text-gray-300": !title,
-                "border-gray-300": !title,
-                "border-emerald-500": !!title,
-                "cursor-pointer": !!title,
-                "hover:bg-emerald-100": !!title,
-                "active:bg-emerald-200": !!title,
-                "active:border-emerald-500": !!title,
-              },
-            )}
-            disabled={!title}
-          >
-            Add
-          </button>
+          <Button disabled={!title} type="constructive">
+            <span className="px-4 py-2">Add</span>
+          </Button>
         </form>
 
         <div className="my-4" />

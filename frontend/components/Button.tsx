@@ -1,79 +1,59 @@
-import { type PropsWithChildren } from "react";
-import styled from "styled-components";
+import classNames from "classnames";
+import { type MouseEventHandler, type PropsWithChildren } from "react";
 
-import useTheme, { type Theme } from "../theme";
-
-type ButtonType = "primary" | "secondary" | "constructive" | "destructive";
+// TODO: create a primary button type, whenevwe we need it
+type ButtonType = "constructive" | "destructive";
 
 interface ButtonProps {
   disabled?: boolean;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
   type: ButtonType;
 }
 
 export default function Button({
   children,
   disabled,
+  onClick,
   type,
 }: PropsWithChildren<ButtonProps>) {
-  const theme = useTheme();
   return (
-    <StyledButton
-      $disabled={disabled || false}
-      $theme={theme}
-      $type={type}
+    <button
+      className={classNames(
+        "border",
+        "border-transparent",
+        "font-bold",
+        "rounded",
+        "transition",
+        {
+          "border-gray-300": disabled,
+          "text-gray-300": disabled,
+          "cursor-pointer": !disabled,
+          ...buttonTypeStyle(),
+        },
+      )}
       disabled={disabled}
+      onClick={onClick}
     >
       {children}
-    </StyledButton>
+    </button>
   );
-}
 
-interface StyledButtonProps {
-  $disabled: boolean;
-  $theme: Theme;
-  $type: ButtonType;
+  function buttonTypeStyle() {
+    // TODO: style secondary type
+    return {
+      secondary: {},
+      constructive: {
+        "text-emerald-500": true,
+        "hover:bg-emerald-100": !disabled,
+        "active:bg-emerald-200": !disabled,
+        "active:border-emerald-500": !disabled,
+      },
+      destructive: {
+        "text-red-500": true,
+        "hover:bg-red-100": !disabled,
+        "active:bg-red-200": !disabled,
+        "active:border-red-500": !disabled,
+      },
+    }[type];
+  }
 }
-
-const StyledButton = styled.button<StyledButtonProps>`
-  background-color: ${({ $theme, $type }) => {
-    switch ($type) {
-      case "primary":
-        return $theme.colors.primary;
-      case "secondary":
-        return $theme.colors.secondary;
-      case "constructive":
-        return $theme.colors.constructive;
-      case "destructive":
-        return $theme.colors.destructive;
-    }
-  }};
-  border-color: ${({ $theme, $type }) => {
-    switch ($type) {
-      case "primary":
-        return $theme.colors.primaryDarker;
-      case "secondary":
-        return $theme.colors.secondaryDarker;
-      case "constructive":
-        return $theme.colors.constructiveDarker;
-      case "destructive":
-        return $theme.colors.destructiveDarker;
-    }
-  }};
-  border-radius: 0.5rem;
-  border-style: solid;
-  border-width: 1px;
-  color: ${({ $theme, $type }) => {
-    switch ($type) {
-      case "primary":
-        return $theme.colors.primaryDarker;
-      case "secondary":
-        return $theme.colors.secondaryDarker;
-      case "constructive":
-        return $theme.colors.constructiveDarker;
-      case "destructive":
-        return $theme.colors.destructiveDarker;
-    }
-  }};
-  opacity: ${({ $disabled }) => ($disabled ? "50%" : "100%")};
-  padding: 0.5rem 0.7rem;
-`;
