@@ -79,7 +79,7 @@ export default function App() {
       </div>
 
       <div className="col-span-3">
-        <TaskGraphView />
+        <TaskGraphView onSelectNode={(id) => setSelectedTask(id)} />
       </div>
     </div>
   );

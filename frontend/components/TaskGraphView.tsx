@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 
+import type { UUID } from "../types";
 import { buildTaskGraph } from "../utils";
 import { useDoc } from "./DocProvider";
 import GraphView, { type GraphData } from "./GraphView";
 
-export default function TaskGraphView() {
+export default function TaskGraphView({
+  onSelectNode,
+}: {
+  onSelectNode?: (id: UUID) => void;
+}) {
   const [doc, _] = useDoc();
   const [showCompleted, setShowCompleted] = useState(false);
   const [graphData, setGraphData] = useState(buildGraphData());
@@ -22,7 +27,10 @@ export default function TaskGraphView() {
         <span className="mx-1" />
         <label>Show completed?</label>
       </div>
-      <GraphView data={graphData} />
+      <GraphView
+        data={graphData}
+        onNodeClick={(node) => onSelectNode && onSelectNode(node.id)}
+      />
     </div>
   );
 
