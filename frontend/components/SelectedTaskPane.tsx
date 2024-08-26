@@ -30,7 +30,13 @@ export default function SelectedTaskPane({
   }, [doc.tasks[task].description]);
 
   return (
-    <div>
+    <div
+      className="
+      p-4
+      w-[80vw]
+      md:w-[50vw]
+      "
+    >
       <textarea
         className="
         font-semibold

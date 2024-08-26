@@ -37,7 +37,6 @@ export default function TaskCard({
         {
           "bg-gray-100": isSelected,
           "border-gray-400": isSelected,
-          "line-through": task.completedAt,
           "text-gray-400": task.completedAt,
         },
       )}
@@ -56,7 +55,13 @@ export default function TaskCard({
           onChange={(e) => completeTask(e, task)}
           type="checkbox"
         />
-        <div className="px-2">{task.title}</div>
+        <div
+          className={classNames("px-2", {
+            "line-through": task.completedAt,
+          })}
+        >
+          {task.title}
+        </div>
       </div>
       <Button
         onClick={(e) => {
