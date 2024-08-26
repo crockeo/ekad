@@ -36,6 +36,8 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
       return;
     }
     graph.current
+      .width(ref.current.clientWidth)
+      .height(ref.current.clientHeight)
       .enableZoomInteraction(false)
       .graphData(data)
       .onNodeClick((node, event) => {
@@ -142,5 +144,5 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
     graph.current.graphData(newData);
   }, [data]);
 
-  return <div ref={ref} />;
+  return <div className="h-full w-full" ref={ref} />;
 }

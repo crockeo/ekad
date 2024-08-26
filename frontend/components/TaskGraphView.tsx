@@ -17,7 +17,7 @@ export default function TaskGraphView({
     setGraphData(buildGraphData());
   }, [doc.tasks, showCompleted]);
   return (
-    <div className="border m-4 rounded">
+    <div className="border flex flex-col h-full rounded w-full">
       <div className="border-b p-4">
         <input
           checked={showCompleted}
