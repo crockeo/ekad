@@ -10,7 +10,7 @@ automerge = "0.5.11"
 enum-map = "2.7.3"
 lazy_static = "1.5.0"
 log = "0.4.22"
-masonry = { git = "https://github.com/crockeo/xilem", branch = "main" }
+masonry = { git = "https://github.com/linebender/xilem", rev = "522d42cf0ce4fc877651b31cb5cb75843b19a75e" }
 petgraph = "0.6.5"
 pollster = "0.3.0"
 pretty_env_logger = "0.5.0"

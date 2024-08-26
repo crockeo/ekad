@@ -1850,7 +1850,7 @@ dependencies = [
 [[package]]
 name = "masonry"
 version = "0.2.0"
-source = "git+https://github.com/crockeo/xilem?branch=main#fa8023dec49850f6bbe49ce9eb05322298a58de2"
+source = "git+https://github.com/linebender/xilem?rev=522d42cf0ce4fc877651b31cb5cb75843b19a75e#522d42cf0ce4fc877651b31cb5cb75843b19a75e"
 dependencies = [
  "accesskit",
  "accesskit_winit",
