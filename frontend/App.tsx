@@ -22,14 +22,17 @@ export default function App() {
   return (
     <div
       className="
-      grid
       px-4
       py-8
+      flex
+      flex-row
+      h-screen
+      overflow-hidden
       md:grid-cols-3
       "
     >
-      <div className="col-span-1 px-4">
-        <form className="flex flex-row" onSubmit={newTask}>
+      <div className="flex flex-col flex-[1_1] h-full px-4">
+        <form className="flex flex-row flex-shrink-0" onSubmit={newTask}>
           <TextInput
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title"
@@ -43,9 +46,9 @@ export default function App() {
           </Button>
         </form>
 
-        <div className="my-4" />
+        <div className="my-4 flex-shrink-0" />
 
-        <div className="space-y-1">
+        <div className="flex-grow space-y-1 overflow-y-auto">
           {openTasks().map((task) => (
             <TaskCard
               isSelected={selectedTask == task.id}
@@ -67,7 +70,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="col-span-2">
+      <div className="flex-[2_2]">
         <TaskGraphView onSelectNode={(id) => setSelectedTask(id)} />
       </div>
 
