@@ -338,25 +338,27 @@ function TaskChip({
       onClick={() => onClick()}
     >
       {title}
-      <button
-        className="
-        border
-        border-transparent
-        h-4
-        ml-2
-        rounded-full
-        transition
-        w-4
-        hover:bg-gray-200
-        active:border-gray-500
-        "
+      <span className="mx-2" />
+      <Button
         onClick={(e) => {
           e.stopPropagation();
           onRemove();
         }}
+        type="destructive"
       >
-        ×
-      </button>
+        <div
+          className="
+          h-4
+          text-gray-500
+          transition
+          w-4
+          group-hover:text-red-500
+          group-active:text-red-500
+          "
+        >
+          ×
+        </div>
+      </Button>
     </span>
   );
 }

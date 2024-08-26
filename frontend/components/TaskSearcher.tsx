@@ -2,6 +2,7 @@ import { type Doc } from "@automerge/automerge-repo";
 import { useState } from "react";
 
 import type { Ekad, Task, UUID } from "../types";
+import Button from "./Button";
 
 export default function TaskSearcher({
   doc,
@@ -16,18 +17,9 @@ export default function TaskSearcher({
   const [title, setTitle] = useState("");
   return (
     <>
-      <button
-        className="
-        bg-gray-200
-        px-2
-        py-1
-        rounded-lg
-        text-gray-500
-        "
-        onClick={() => setDialogOpen(true)}
-      >
-        Add +
-      </button>
+      <Button onClick={() => setDialogOpen(true)} type="secondary">
+        <div className="px-2 py-1 text-xs">Add +</div>
+      </Button>
 
       {dialogOpen && (
         <>

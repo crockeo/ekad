@@ -3,6 +3,7 @@ import classNames from "classnames";
 import type { ChangeEvent } from "react";
 
 import { type Task, type UUID } from "../types";
+import Button from "./Button";
 import { useDoc } from "./DocProvider";
 
 export default function TaskCard({
@@ -57,29 +58,15 @@ export default function TaskCard({
         />
         <div className="px-2">{task.title}</div>
       </div>
-      <button
-        className="
-        border
-        border-transparent
-        cursor-pointer
-        flex-none
-        font-bold
-        text-red-500
-        text-xs
-        rounded
-        transition
-        w-6
-        h-6
-        hover:bg-red-200
-        active:border-red-500
-        "
+      <Button
         onClick={(e) => {
           e.stopPropagation();
           deleteTask(task);
         }}
+        type="destructive"
       >
-        ×
-      </button>
+        <div className="w-6 h-6">×</div>
+      </Button>
     </div>
   );
 
