@@ -83,13 +83,13 @@ export default function TaskCard({
       doc.tasks[task.id].deletedAt = newDeletedAt;
 
       // TODO: test that this works? and maybe pull it out into a generic "remove edge" function?
-      for (const blocks of doc.tasks[task.id].blocks) {
+      for (const blocks of doc.tasks[task.id].blocks || []) {
         const pos = doc.tasks[blocks].blockedBy.indexOf(task.id);
         if (pos != -1) {
           doc.tasks[blocks].blockedBy.splice(pos, 1);
         }
       }
-      for (const blockedBy of doc.tasks[task.id].blockedBy) {
+      for (const blockedBy of doc.tasks[task.id].blockedBy || []) {
         const pos = doc.tasks[blockedBy].blocks.indexOf(task.id);
         if (pos != -1) {
           doc.tasks[blockedBy].blockedBy.splice(pos, 1);
