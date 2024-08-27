@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import type { UUID } from "../types";
 import { buildTaskGraph } from "../utils";
-import { useDoc } from "./DocProvider";
+import { useRepo } from "./DocProvider";
 import GraphView, { type GraphData } from "./GraphView";
 
 export default function TaskGraphView({
@@ -10,12 +10,16 @@ export default function TaskGraphView({
 }: {
   onSelectNode?: (id: UUID) => void;
 }) {
-  const [doc, _] = useDoc();
+  const repo = useRepo();
   const [showCompleted, setShowCompleted] = useState(false);
   const [graphData, setGraphData] = useState(buildGraphData());
+
+  // TODO: how do i set the deps of this such that it doesn't
+  // have to peek inside of the Repo?
   useEffect(() => {
     setGraphData(buildGraphData());
-  }, [doc.tasks, showCompleted]);
+  }, [repo.doc.tasks, showCompleted]);
+
   return (
     <div className="border flex flex-col h-full rounded w-full">
       <div className="border-b p-4">
@@ -35,13 +39,13 @@ export default function TaskGraphView({
   );
 
   function buildGraphData(): GraphData {
-    const graph = buildTaskGraph(doc, { showCompleted: showCompleted });
+    const graph = buildTaskGraph(repo, { showCompleted: showCompleted });
     const graphData: GraphData = {
       nodes: [],
       links: [],
     };
     for (const node of graph.nodes()) {
-      const task = doc.tasks[node];
+      const task = repo.getTask(node);
       graphData.nodes.push({
         id: task.id,
         name: task.title,

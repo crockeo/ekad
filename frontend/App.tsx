@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { uuidv7 } from "uuidv7";
 
 import Button from "./components/Button";
-import { useDoc } from "./components/DocProvider";
+import { useRepo } from "./components/DocProvider";
 import Fold from "./components/Fold";
 import Modal from "./components/Modal";
 import SelectedTaskPane from "./components/SelectedTaskPane";
@@ -14,7 +14,7 @@ import type { Task, UUID } from "./types";
 import { buildTaskGraph, sortBy } from "./utils";
 
 export default function App() {
-  const [doc, changeDoc] = useDoc();
+  const repo = useRepo();
 
   const [title, setTitle] = useState("");
   const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
@@ -86,26 +86,24 @@ export default function App() {
   );
 
   function openTasks(): Task[] {
-    const graph = buildTaskGraph(doc);
+    const graph = buildTaskGraph(repo);
     const order = [];
     for (const generation of topologicalGenerations(graph).toReversed()) {
-      sortBy(generation, (id) => doc?.tasks[id].title);
+      sortBy(generation, (id) => repo.getTask(id).title);
       order.push(...generation);
     }
-    return order.map((taskID) => doc?.tasks[taskID]);
+    return order.map((taskID) => repo.getTask(taskID));
   }
 
   function completedTasks(): Task[] {
-    return Object.values(doc?.tasks).filter(
-      (task) => task.completedAt && !task.deletedAt,
-    );
+    return repo
+      .tasks()
+      .map((task) => repo.getTask(task))
+      .filter((task) => task.completedAt && !task.deletedAt);
   }
 
   function newTask(e: FormEvent) {
     e.preventDefault();
-    if (!doc) {
-      throw new Error("Cannot add task; DB is unavailable?");
-    }
 
     const id = uuidv7();
     const newTask = {
@@ -119,9 +117,7 @@ export default function App() {
     };
 
     setTitle("");
-    changeDoc((doc) => {
-      doc.tasks[newTask.id] = newTask;
-    });
+    repo.createTask(newTask);
     setSelectedTask(newTask.id);
   }
 }

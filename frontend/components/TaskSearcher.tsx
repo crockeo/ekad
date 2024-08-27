@@ -1,17 +1,17 @@
-import { type Doc } from "@automerge/automerge-repo";
 import { useState } from "react";
 
-import type { Ekad, Task, UUID } from "../types";
+import type { Task, UUID } from "../types";
 import Button from "./Button";
+import type { Repo } from "./DocProvider";
 
 export default function TaskSearcher({
-  doc,
   ignore,
   onChooseTask,
+  repo,
 }: {
-  doc: Doc<Ekad>;
   ignore: UUID[];
   onChooseTask: (task: UUID) => void;
+  repo: Repo;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -79,7 +79,8 @@ export default function TaskSearcher({
 
   function getMatchingTasks(): Task[] {
     const matchingTasks = [];
-    for (const task of Object.values(doc.tasks)) {
+    for (const taskID of repo.tasks()) {
+      const task = repo.getTask(taskID);
       if (task.completedAt || task.deletedAt) {
         continue;
       }

@@ -4,7 +4,7 @@ import type { ChangeEvent } from "react";
 
 import { type Task, type UUID } from "../types";
 import Button from "./Button";
-import { useDoc } from "./DocProvider";
+import { useRepo } from "./DocProvider";
 
 export default function TaskCard({
   isSelected,
@@ -15,7 +15,7 @@ export default function TaskCard({
   onClick: (task: UUID) => void;
   task: Task;
 }) {
-  const [_, changeDoc] = useDoc();
+  const repo = useRepo();
   return (
     <div
       className={classNames(
@@ -76,30 +76,10 @@ export default function TaskCard({
   );
 
   function completeTask(e: ChangeEvent<HTMLInputElement>, task: Task) {
-    const newCompletedAt = e.target.checked ? new Date() : null;
-    changeDoc((doc) => {
-      doc.tasks[task.id].completedAt = newCompletedAt;
-    });
+    repo.complete(task.id, e.target.checked);
   }
 
   function deleteTask(task: Task) {
-    const newDeletedAt = new Date();
-    changeDoc((doc) => {
-      doc.tasks[task.id].deletedAt = newDeletedAt;
-
-      // TODO: test that this works? and maybe pull it out into a generic "remove edge" function?
-      for (const blocks of doc.tasks[task.id].blocks || []) {
-        const pos = doc.tasks[blocks].blockedBy.indexOf(task.id);
-        if (pos != -1) {
-          doc.tasks[blocks].blockedBy.splice(pos, 1);
-        }
-      }
-      for (const blockedBy of doc.tasks[task.id].blockedBy || []) {
-        const pos = doc.tasks[blockedBy].blocks.indexOf(task.id);
-        if (pos != -1) {
-          doc.tasks[blockedBy].blockedBy.splice(pos, 1);
-        }
-      }
-    });
+    repo.delete(task.id);
   }
 }

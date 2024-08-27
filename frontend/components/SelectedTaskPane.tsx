@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 
 import type { Task, UUID } from "../types";
 import Button from "./Button";
-import { useDoc } from "./DocProvider";
+import { useRepo } from "./DocProvider";
 import TaskSearcher from "./TaskSearcher";
 
 export default function SelectedTaskPane({
@@ -13,21 +13,22 @@ export default function SelectedTaskPane({
   onSelectTask: (task: UUID) => void;
   task: UUID;
 }) {
-  const [doc, changeDoc] = useDoc();
+  const repo = useRepo();
+  const taskInstance = repo.getTask(task);
 
   const titleArea = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (titleArea.current) {
       updateTextAreaHeight(titleArea.current);
     }
-  }, [doc.tasks[task].title]);
+  }, [taskInstance.title]);
 
   const descriptionArea = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (descriptionArea.current) {
       updateTextAreaHeight(descriptionArea.current);
     }
-  }, [doc.tasks[task].description]);
+  }, [taskInstance.description]);
 
   return (
     <div
@@ -48,7 +49,7 @@ export default function SelectedTaskPane({
         onChange={(e) => updateTitle(e.target.value)}
         placeholder="Title"
         ref={titleArea}
-        value={doc.tasks[task].title}
+        value={repo.getTask(task).title}
       />
 
       <div className="my-2" />
@@ -62,35 +63,39 @@ export default function SelectedTaskPane({
       >
         <div className="space-x-2">
           <span>Blocks:</span>
-          {doc.tasks[task].blocks?.map((id) => (
-            <TaskChip
-              key={id}
-              onClick={() => onSelectTask(id)}
-              onRemove={() => removeEdge(id, task)}
-              task={doc.tasks[id]}
-            />
-          ))}
+          {repo
+            .getTask(task)
+            .blocks?.map((id) => (
+              <TaskChip
+                key={id}
+                onClick={() => onSelectTask(id)}
+                onRemove={() => repo.removeEdge(id, task)}
+                task={repo.getTask(id)}
+              />
+            ))}
           <TaskSearcher
-            doc={doc}
-            ignore={[task, ...(doc.tasks[task].blocks || [])]}
-            onChooseTask={(chosenTask) => addEdge(chosenTask, task)}
+            ignore={[task, ...(repo.getTask(task).blocks || [])]}
+            onChooseTask={(chosenTask) => repo.addEdge(chosenTask, task)}
+            repo={repo}
           />
         </div>
 
         <div className="space-x-2">
           <span className="mr-2">Blocked by:</span>
-          {doc.tasks[task].blockedBy?.map((id) => (
-            <TaskChip
-              key={id}
-              onClick={() => onSelectTask(id)}
-              onRemove={() => removeEdge(task, id)}
-              task={doc.tasks[id]}
-            />
-          ))}
+          {repo
+            .getTask(task)
+            .blockedBy?.map((id) => (
+              <TaskChip
+                key={id}
+                onClick={() => onSelectTask(id)}
+                onRemove={() => repo.removeEdge(task, id)}
+                task={repo.getTask(id)}
+              />
+            ))}
           <TaskSearcher
-            doc={doc}
-            ignore={[task, ...(doc.tasks[task].blockedBy || [])]}
-            onChooseTask={(chosenTask) => addEdge(task, chosenTask)}
+            ignore={[task, ...(repo.getTask(task).blockedBy || [])]}
+            onChooseTask={(chosenTask) => repo.addEdge(task, chosenTask)}
+            repo={repo}
           />
         </div>
       </div>
@@ -109,73 +114,22 @@ export default function SelectedTaskPane({
         onChange={(e) => updateDescription(e.target.value)}
         placeholder="Description"
         ref={descriptionArea}
-        value={doc.tasks[task].description}
+        value={repo.getTask(task).description}
       ></textarea>
     </div>
   );
-
-  function addEdge(from: UUID, to: UUID): void {
-    changeDoc((doc) => {
-      if (!doc.tasks[from].blockedBy) {
-        doc.tasks[from].blockedBy = [];
-      }
-      if (!doc.tasks[to].blocks) {
-        doc.tasks[to].blocks = [];
-      }
-
-      if (doc.tasks[from].blockedBy.findIndex((val) => val == from) == -1) {
-        doc.tasks[from].blockedBy.push(to);
-      }
-      if (doc.tasks[to].blocks.findIndex((val) => val == to) == -1) {
-        doc.tasks[to].blocks.push(from);
-      }
-    });
-  }
-
-  function removeEdge(from: UUID, to: UUID): void {
-    changeDoc((doc) => {
-      // For some reason `.indexOf` isn't working here,
-      // despite these UUIDs existing in the arrays.
-      // So we're manually finding the index and splicing :/
-      let blockedByIndex = -1;
-      for (let i = 0; i < doc.tasks[from].blockedBy.length; i++) {
-        if (doc.tasks[from].blockedBy[i] == to) {
-          blockedByIndex = i;
-          break;
-        }
-      }
-      if (blockedByIndex >= 0) {
-        doc.tasks[from].blockedBy.splice(blockedByIndex);
-      }
-
-      let blocksIndex = -1;
-      for (let i = 0; i < doc.tasks[to].blocks.length; i++) {
-        if (doc.tasks[to].blocks[i] == from) {
-          blocksIndex = i;
-          break;
-        }
-      }
-      if (blocksIndex) {
-        doc.tasks[to].blocks.splice(blocksIndex);
-      }
-    });
-  }
 
   function updateTitle(title: string): void {
     // TODO: debounce
     // TODO: updateText instead of assigning
     title = title.replaceAll("\n", "");
-    changeDoc((doc) => {
-      doc.tasks[task].title = title;
-    });
+    repo.setTitle(task, title);
   }
 
   function updateDescription(description: string): void {
     // TODO: debounce
     // TODO: updateText instead of assigning
-    changeDoc((doc) => {
-      doc.tasks[task].description = description;
-    });
+    repo.setDescription(task, description);
   }
 
   function updateTextAreaHeight(element: HTMLTextAreaElement): void {

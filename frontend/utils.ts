@@ -1,12 +1,11 @@
-import type { Doc } from "@automerge/automerge-repo";
 import { DirectedGraph } from "graphology";
 
-import type { Ekad } from "./types";
+import type { Repo } from "./components/DocProvider";
 
 // taskGraph takes the list representation of tasks inside of an Automerge document
 // and converts them into a graphology DirectedGraph.
 export function buildTaskGraph(
-  doc: Doc<Ekad>,
+  repo: Repo,
   options?: { showCompleted?: boolean },
 ): DirectedGraph {
   if (!options) {
@@ -18,13 +17,14 @@ export function buildTaskGraph(
   };
 
   const graph = new DirectedGraph();
-  for (const task of Object.values(doc.tasks)) {
+  for (const taskID of repo.tasks()) {
+    const task = repo.getTask(taskID);
     if (task.deletedAt) {
       continue;
     }
     graph.mergeNode(task.id);
     for (const blockedBy of task.blockedBy || []) {
-      if (doc.tasks[blockedBy].deletedAt) {
+      if (repo.getTask(blockedBy).deletedAt) {
         continue;
       }
       graph.mergeNode(blockedBy);
@@ -37,7 +37,7 @@ export function buildTaskGraph(
   // such that all incoming nodes are linked to all outgoing nodes.
   if (!options.showCompleted) {
     for (const node of graph.nodes()) {
-      if (!doc.tasks[node].completedAt) {
+      if (!repo.getTask(node).completedAt) {
         continue;
       }
 

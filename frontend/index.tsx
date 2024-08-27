@@ -12,8 +12,7 @@ import * as ReactDOM from "react-dom/client";
 import App from "./App";
 import { DocProvider } from "./components/DocProvider";
 import { getCookie, setCookie } from "./cookies";
-
-interface Ekad {}
+import type { Ekad } from "./types";
 
 const indexedDB = new IndexedDBStorageAdapter();
 const broadcast = new BroadcastChannelNetworkAdapter();
