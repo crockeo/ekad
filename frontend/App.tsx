@@ -112,8 +112,8 @@ export default function App() {
       description: "",
       completedAt: null,
       deletedAt: null,
-      blocks: [],
-      blockedBy: [],
+      blocks: {},
+      blockedBy: {},
     };
 
     setTitle("");

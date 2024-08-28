@@ -9,7 +9,7 @@ export default function TaskSearcher({
   onChooseTask,
   repo,
 }: {
-  ignore: UUID[];
+  ignore: { [key: UUID]: {} };
   onChooseTask: (task: UUID) => void;
   repo: Repo;
 }) {
@@ -84,7 +84,7 @@ export default function TaskSearcher({
       if (task.completedAt || task.deletedAt) {
         continue;
       }
-      if (ignore.findIndex((id) => id == task.id) != -1) {
+      if (taskID in ignore) {
         continue;
       }
       if (task.title.toLowerCase().includes(title.toLowerCase())) {

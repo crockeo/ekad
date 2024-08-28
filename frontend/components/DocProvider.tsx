@@ -87,65 +87,27 @@ export class Repo {
       doc.tasks[id].deletedAt = new Date();
 
       // TODO: test that this works? and maybe pull it out into a generic "remove edge" function?
-      for (const blocks of doc.tasks[id].blocks || []) {
-        const pos = doc.tasks[blocks].blockedBy.indexOf(id);
-        if (pos != -1) {
-          doc.tasks[blocks].blockedBy.splice(pos, 1);
-        }
+      for (const blocks of Object.keys(doc.tasks[id].blocks)) {
+        delete doc.tasks[blocks].blockedBy[id];
       }
-      for (const blockedBy of doc.tasks[id].blockedBy || []) {
-        const pos = doc.tasks[blockedBy].blocks.indexOf(id);
-        if (pos != -1) {
-          doc.tasks[blockedBy].blockedBy.splice(pos, 1);
-        }
+      for (const blockedBy of Object.keys(doc.tasks[id].blockedBy)) {
+        delete doc.tasks[blockedBy].blocks[id];
       }
     });
   }
 
   addEdge(from: UUID, to: UUID): void {
+    // TODO: check that this does not create a cycle.
     this.changeDoc((doc) => {
-      if (!doc.tasks[from].blockedBy) {
-        doc.tasks[from].blockedBy = [];
-      }
-      if (!doc.tasks[to].blocks) {
-        doc.tasks[to].blocks = [];
-      }
-
-      if (doc.tasks[from].blockedBy.findIndex((val) => val == from) == -1) {
-        doc.tasks[from].blockedBy.push(to);
-      }
-      if (doc.tasks[to].blocks.findIndex((val) => val == to) == -1) {
-        doc.tasks[to].blocks.push(from);
-      }
+      doc.tasks[from].blockedBy[to] = {};
+      doc.tasks[to].blocks[from] = {};
     });
   }
 
   removeEdge(from: UUID, to: UUID): void {
     this.changeDoc((doc) => {
-      // For some reason `.indexOf` isn't working here,
-      // despite these UUIDs existing in the arrays.
-      // So we're manually finding the index and splicing :/
-      let blockedByIndex = -1;
-      for (let i = 0; i < doc.tasks[from].blockedBy.length; i++) {
-        if (doc.tasks[from].blockedBy[i] == to) {
-          blockedByIndex = i;
-          break;
-        }
-      }
-      if (blockedByIndex >= 0) {
-        doc.tasks[from].blockedBy.splice(blockedByIndex);
-      }
-
-      let blocksIndex = -1;
-      for (let i = 0; i < doc.tasks[to].blocks.length; i++) {
-        if (doc.tasks[to].blocks[i] == from) {
-          blocksIndex = i;
-          break;
-        }
-      }
-      if (blocksIndex) {
-        doc.tasks[to].blocks.splice(blocksIndex);
-      }
+      delete doc.tasks[from].blockedBy[to];
+      delete doc.tasks[to].blocks[from];
     });
   }
 }

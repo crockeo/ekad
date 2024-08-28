@@ -63,18 +63,16 @@ export default function SelectedTaskPane({
       >
         <div className="space-x-2">
           <span>Blocks:</span>
-          {repo
-            .getTask(task)
-            .blocks?.map((id) => (
-              <TaskChip
-                key={id}
-                onClick={() => onSelectTask(id)}
-                onRemove={() => repo.removeEdge(id, task)}
-                task={repo.getTask(id)}
-              />
-            ))}
+          {Object.keys(repo.getTask(task).blocks).map((id) => (
+            <TaskChip
+              key={id}
+              onClick={() => onSelectTask(id)}
+              onRemove={() => repo.removeEdge(id, task)}
+              task={repo.getTask(id)}
+            />
+          ))}
           <TaskSearcher
-            ignore={[task, ...(repo.getTask(task).blocks || [])]}
+            ignore={{ task: {}, ...repo.getTask(task).blocks }}
             onChooseTask={(chosenTask) => repo.addEdge(chosenTask, task)}
             repo={repo}
           />
@@ -82,18 +80,16 @@ export default function SelectedTaskPane({
 
         <div className="space-x-2">
           <span className="mr-2">Blocked by:</span>
-          {repo
-            .getTask(task)
-            .blockedBy?.map((id) => (
-              <TaskChip
-                key={id}
-                onClick={() => onSelectTask(id)}
-                onRemove={() => repo.removeEdge(task, id)}
-                task={repo.getTask(id)}
-              />
-            ))}
+          {Object.keys(repo.getTask(task).blockedBy).map((id) => (
+            <TaskChip
+              key={id}
+              onClick={() => onSelectTask(id)}
+              onRemove={() => repo.removeEdge(task, id)}
+              task={repo.getTask(id)}
+            />
+          ))}
           <TaskSearcher
-            ignore={[task, ...(repo.getTask(task).blockedBy || [])]}
+            ignore={{ task: {}, ...repo.getTask(task).blockedBy }}
             onChooseTask={(chosenTask) => repo.addEdge(task, chosenTask)}
             repo={repo}
           />

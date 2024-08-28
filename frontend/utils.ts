@@ -23,7 +23,7 @@ export function buildTaskGraph(
       continue;
     }
     graph.mergeNode(task.id);
-    for (const blockedBy of task.blockedBy || []) {
+    for (const blockedBy of Object.keys(task.blockedBy)) {
       if (repo.getTask(blockedBy).deletedAt) {
         continue;
       }
