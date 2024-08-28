@@ -4,7 +4,7 @@ import type { ChangeEvent } from "react";
 
 import Button from "@ekad/components/Button";
 import { useRepo } from "@ekad/components/DocProvider";
-import { type Task, type UUID } from "@ekad/types";
+import type { Task, UUID } from "@ekad/types";
 
 export default function TaskCard({
   isSelected,

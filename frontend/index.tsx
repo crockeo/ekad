@@ -1,7 +1,7 @@
 import {
-  DocHandle,
-  isValidAutomergeUrl,
+  type DocHandle,
   Repo,
+  isValidAutomergeUrl,
 } from "@automerge/automerge-repo";
 import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-network-broadcastchannel";
 import { BrowserWebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";

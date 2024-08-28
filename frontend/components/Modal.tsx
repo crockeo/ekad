@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { type PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 
 interface ModalProps {
   onRequestClose: () => void;
@@ -30,6 +30,10 @@ export default function Modal({
               "display-none": !open,
             },
           )}
+          onKeyDown={(e) => {
+            console.log(e);
+            onRequestClose();
+          }}
           onClick={() => onRequestClose()}
         >
           <div

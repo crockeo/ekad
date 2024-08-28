@@ -4,11 +4,13 @@ interface TextInputProps {
   placeholder?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   value: string;
+  $ref?: React.RefObject<HTMLInputElement>;
 }
 
 export default function TextInput({
-  placeholder,
   onChange,
+  placeholder,
+  $ref,
   value,
 }: TextInputProps) {
   return (
@@ -26,6 +28,7 @@ export default function TextInput({
       type="text"
       onChange={onChange}
       placeholder={placeholder}
+      ref={$ref}
       value={value}
     />
   );

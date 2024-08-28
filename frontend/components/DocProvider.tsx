@@ -1,15 +1,19 @@
 import {
   type AutomergeUrl,
-  type Doc,
   type ChangeFn,
+  type Doc,
   updateText,
 } from "@automerge/automerge-repo";
 import { useDocument } from "@automerge/automerge-repo-react-hooks";
-import { createContext, type PropsWithChildren, useContext } from "react";
+import type { ChangeOptions } from "@automerge/automerge/slim/next";
+import { type PropsWithChildren, createContext, useContext } from "react";
 
 import type { Ekad, Task, UUID } from "@ekad/types";
 
-type changeDocFn = (changeFn: ChangeFn<Ekad>, options?: any) => void;
+type changeDocFn = (
+  changeFn: ChangeFn<Ekad>,
+  options?: ChangeOptions<Doc<Ekad>>,
+) => void;
 const docContext = createContext<[Doc<Ekad>, changeDocFn] | null>(null);
 
 export function DocProvider({

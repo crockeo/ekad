@@ -29,7 +29,7 @@ interface GraphViewProps {
 
 export default function GraphView({ data, onNodeClick }: GraphViewProps) {
   const ref = useRef<HTMLDivElement>(null);
-  let graph = useRef<ForceGraphInstance>(ForceGraph());
+  const graph = useRef<ForceGraphInstance>(ForceGraph());
 
   useEffect(() => {
     if (!ref.current) {

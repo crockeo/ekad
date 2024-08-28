@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { type MouseEventHandler, type PropsWithChildren } from "react";
+import type { MouseEventHandler, PropsWithChildren } from "react";
 
 // TODO: create a primary button type, whenevwe we need it
 type ButtonType = "secondary" | "constructive" | "destructive";

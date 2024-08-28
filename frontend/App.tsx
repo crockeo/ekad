@@ -1,5 +1,5 @@
 import { topologicalGenerations } from "graphology-dag";
-import { useState, type FormEvent } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { uuidv7 } from "uuidv7";
 
 import Button from "@ekad/components/Button";
@@ -16,8 +16,29 @@ import { buildTaskGraph, sortBy } from "@ekad/utils";
 export default function App() {
   const repo = useRepo();
 
+  const input = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
+
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => {
+      if (
+        document.activeElement != input.current &&
+        e.key.toLowerCase() == "c"
+      ) {
+        input.current?.focus();
+        e.preventDefault();
+      }
+      if (document.activeElement == input.current && e.key == "Escape") {
+        input.current?.blur();
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("keydown", listener);
+    return () => {
+      document.removeEventListener("keydown", listener);
+    };
+  }, []);
 
   return (
     <div
@@ -36,6 +57,7 @@ export default function App() {
           <TextInput
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title"
+            $ref={input}
             value={title}
           />
 
