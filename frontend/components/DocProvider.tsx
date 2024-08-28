@@ -78,7 +78,7 @@ export class Repo {
 
   complete(id: UUID, isComplete: boolean): void {
     this.changeDoc((doc) => {
-      doc.tasks[id].completedAt = isComplete ? null : new Date();
+      doc.tasks[id].completedAt = isComplete ? new Date() : null;
     });
   }
 

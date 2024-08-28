@@ -19,7 +19,7 @@ const broadcast = new BroadcastChannelNetworkAdapter();
 const websocket = new BrowserWebSocketClientAdapter("wss://sync.automerge.org");
 const repo = new Repo({
   storage: indexedDB,
-  network: [broadcast, websocket],
+  network: [broadcast], // , websocket], can reenable later if we care to :)
 });
 
 function getRootDocHandle(): DocHandle<Ekad> {
