@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import type { UUID } from "../types";
-import { buildTaskGraph } from "../utils";
-import { useRepo } from "./DocProvider";
-import GraphView, { type GraphData } from "./GraphView";
+import { useRepo } from "@ekad/components/DocProvider";
+import GraphView, { type GraphData } from "@ekad/components/GraphView";
+import type { UUID } from "@ekad/types";
+import { buildTaskGraph } from "@ekad/utils";
 
 export default function TaskGraphView({
   onSelectNode,

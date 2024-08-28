@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-import type { Task, UUID } from "../types";
-import Button from "./Button";
-import type { Repo } from "./DocProvider";
+import Button from "@ekad/components/Button";
+import type { Repo } from "@ekad/components/DocProvider";
+import type { Task, UUID } from "@ekad/types";
 
 export default function TaskSearcher({
   ignore,

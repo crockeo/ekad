@@ -3,13 +3,13 @@ import { useState, type FormEvent } from "react";
 import styled from "styled-components";
 import { uuidv7 } from "uuidv7";
 
-import Button from "./components/Button";
+import Button from "@ekad/components/Button";
 import GraphView, {
   type GraphData,
   type NodeObject,
-} from "./components/GraphView";
-import Modal from "./components/Modal";
-import TextInput from "./components/TextInput";
+} from "@ekad/components/GraphView";
+import Modal from "@ekad/components/Modal";
+import TextInput from "@ekad/components/TextInput";
 
 type UUID = string;
 

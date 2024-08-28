@@ -1,10 +1,10 @@
 import classNames from "classnames";
 import { useEffect, useRef } from "react";
 
-import type { Task, UUID } from "../types";
-import Button from "./Button";
-import { useRepo } from "./DocProvider";
-import TaskSearcher from "./TaskSearcher";
+import Button from "@ekad/components/Button";
+import { useRepo } from "@ekad/components/DocProvider";
+import TaskSearcher from "@ekad/components/TaskSearcher";
+import type { Task, UUID } from "@ekad/types";
 
 export default function SelectedTaskPane({
   onSelectTask,

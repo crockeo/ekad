@@ -1,6 +1,6 @@
 import { DirectedGraph } from "graphology";
 
-import type { Repo } from "./components/DocProvider";
+import type { Repo } from "@ekad/components/DocProvider";
 
 // taskGraph takes the list representation of tasks inside of an Automerge document
 // and converts them into a graphology DirectedGraph.

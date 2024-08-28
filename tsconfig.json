@@ -22,6 +22,12 @@
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Used to let us import things starting with @ekad, instead of relative paths.
+    "include": ["./frontend"],
+    "paths": {
+      "@ekad/*": ["./frontend/*"]
+    }
   }
 }

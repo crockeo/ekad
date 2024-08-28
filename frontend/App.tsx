@@ -2,16 +2,16 @@ import { topologicalGenerations } from "graphology-dag";
 import { useState, type FormEvent } from "react";
 import { uuidv7 } from "uuidv7";
 
-import Button from "./components/Button";
-import { useRepo } from "./components/DocProvider";
-import Fold from "./components/Fold";
-import Modal from "./components/Modal";
-import SelectedTaskPane from "./components/SelectedTaskPane";
-import TaskCard from "./components/TaskCard";
-import TaskGraphView from "./components/TaskGraphView";
-import TextInput from "./components/TextInput";
-import type { Task, UUID } from "./types";
-import { buildTaskGraph, sortBy } from "./utils";
+import Button from "@ekad/components/Button";
+import { useRepo } from "@ekad/components/DocProvider";
+import Fold from "@ekad/components/Fold";
+import Modal from "@ekad/components/Modal";
+import SelectedTaskPane from "@ekad/components/SelectedTaskPane";
+import TaskCard from "@ekad/components/TaskCard";
+import TaskGraphView from "@ekad/components/TaskGraphView";
+import TextInput from "@ekad/components/TextInput";
+import type { Task, UUID } from "@ekad/types";
+import { buildTaskGraph, sortBy } from "@ekad/utils";
 
 export default function App() {
   const repo = useRepo();

@@ -9,10 +9,10 @@ import { RepoContext } from "@automerge/automerge-repo-react-hooks";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import * as ReactDOM from "react-dom/client";
 
-import App from "./App";
-import { DocProvider } from "./components/DocProvider";
-import { getCookie, setCookie } from "./cookies";
-import type { Ekad } from "./types";
+import App from "@ekad/App";
+import { DocProvider } from "@ekad/components/DocProvider";
+import { getCookie, setCookie } from "@ekad/cookies";
+import type { Ekad } from "@ekad/types";
 
 const indexedDB = new IndexedDBStorageAdapter();
 const broadcast = new BroadcastChannelNetworkAdapter();
