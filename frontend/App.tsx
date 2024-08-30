@@ -20,31 +20,11 @@ export default function App() {
   const [title, setTitle] = useState("");
   const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
 
-  useEffect(() => {
-    const listener = (e: KeyboardEvent) => {
-      if (
-        document.activeElement != input.current &&
-        e.key.toLowerCase() == "c"
-      ) {
-        input.current?.focus();
-        e.preventDefault();
-      }
-      if (document.activeElement == input.current && e.key == "Escape") {
-        input.current?.blur();
-        e.preventDefault();
-      }
-    };
-    document.addEventListener("keydown", listener);
-    return () => {
-      document.removeEventListener("keydown", listener);
-    };
-  }, []);
-
   return (
     <div
       className="
-      px-4
-      py-8
+      px-1
+      py-2
       flex
       flex-row
       h-screen
@@ -52,8 +32,16 @@ export default function App() {
       md:grid-cols-3
       "
     >
-      <div className="flex flex-col flex-[1_1] h-full px-4">
-        <form className="flex flex-row flex-shrink-0" onSubmit={newTask}>
+      <div className="flex flex-col flex-[1_1] h-full px-1">
+        <form
+          className="
+          flex
+          flex-row
+          flex-shrink-0
+          space-x-1
+          "
+          onSubmit={newTask}
+        >
           <TextInput
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title"
@@ -61,19 +49,17 @@ export default function App() {
             value={title}
           />
 
-          <div className="mx-2" />
-
           <Button disabled={!title} type="constructive">
-            <span className="px-4 py-2">Add</span>
+            <div className="flex-none h-4 w-4">+</div>
           </Button>
         </form>
 
-        <div className="my-4 flex-shrink-0" />
+        <div className="my-1 flex-shrink-0" />
 
         <div className="flex-grow space-y-1 overflow-y-auto">
           {openTasks().map((task) => (
             <TaskCard
-              isSelected={selectedTask == task.id}
+              isSelected={selectedTask === task.id}
               key={task.id}
               onClick={setSelectedTask}
               task={task}
@@ -82,7 +68,7 @@ export default function App() {
           <Fold name="Completed Tasks">
             {completedTasks().map((task) => (
               <TaskCard
-                isSelected={selectedTask == task.id}
+                isSelected={selectedTask === task.id}
                 key={task.id}
                 onClick={setSelectedTask}
                 task={task}

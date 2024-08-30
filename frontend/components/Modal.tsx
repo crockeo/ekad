@@ -30,10 +30,6 @@ export default function Modal({
               "display-none": !open,
             },
           )}
-          onKeyDown={(e) => {
-            console.log(e);
-            onRequestClose();
-          }}
           onClick={() => onRequestClose()}
         >
           <div

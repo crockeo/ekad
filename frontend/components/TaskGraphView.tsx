@@ -22,7 +22,7 @@ export default function TaskGraphView({
 
   return (
     <div className="border flex flex-col h-full rounded w-full">
-      <div className="border-b p-4">
+      <div className="border-b p-2">
         <input
           checked={showCompleted}
           onChange={(e) => setShowCompleted(e.target.checked)}
@@ -33,7 +33,7 @@ export default function TaskGraphView({
       </div>
       <GraphView
         data={graphData}
-        onNodeClick={(node) => onSelectNode && onSelectNode(node.id)}
+        onNodeClick={(node) => onSelectNode?.(node.id)}
       />
     </div>
   );

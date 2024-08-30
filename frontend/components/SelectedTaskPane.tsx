@@ -111,7 +111,7 @@ export default function SelectedTaskPane({
         placeholder="Description"
         ref={descriptionArea}
         value={repo.getTask(task).description}
-      ></textarea>
+      />
     </div>
   );
 
@@ -177,6 +177,7 @@ function TaskChip({
       {title}
       <span className="mx-2" />
       <Button
+        idleBorder={false}
         onClick={(e) => {
           e.stopPropagation();
           onRemove();

@@ -8,6 +8,6 @@ repos:
         files: \.(css|html|js|jsx|ts|tsx)$
     -   id: biome
         name: biome
-        entry: bunx @biomejs/biome check --write
+        entry: bunx @biomejs/biome check --write --unsafe
         language: system
         files: \.(css|html|js|jsx|ts|tsx)$

@@ -19,7 +19,8 @@ export default function TextInput({
       border
       border-gray-200
       grow
-      p-2
+      px-2
+      py-1
       rounded
       transition
       focus:border-gray-400

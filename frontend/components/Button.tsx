@@ -6,6 +6,7 @@ type ButtonType = "secondary" | "constructive" | "destructive";
 
 interface ButtonProps {
   disabled?: boolean;
+  idleBorder?: boolean;
   onClick?: MouseEventHandler<HTMLButtonElement>;
   type: ButtonType;
 }
@@ -13,25 +14,23 @@ interface ButtonProps {
 export default function Button({
   children,
   disabled,
+  idleBorder,
   onClick,
   type,
 }: PropsWithChildren<ButtonProps>) {
+  if (idleBorder === undefined) {
+    idleBorder = true;
+  }
+
   return (
     <button
-      className={classNames(
-        "border",
-        "border-transparent",
-        "font-bold",
-        "group",
-        "rounded",
-        "transition",
-        {
-          "border-gray-300": disabled,
-          "text-gray-300": disabled,
-          "cursor-pointer": !disabled,
-          ...buttonTypeStyle(),
-        },
-      )}
+      className={classNames("border", "group", "rounded", "transition", {
+        "border-gray-300": idleBorder && disabled,
+        "border-transparent": !idleBorder,
+        "text-gray-300": disabled,
+        "cursor-pointer": !disabled,
+        ...buttonTypeStyle(),
+      })}
       disabled={disabled}
       onClick={onClick}
     >
@@ -50,12 +49,14 @@ export default function Button({
       },
       constructive: {
         "text-emerald-500": true,
+        "border-emerald-200": idleBorder && !disabled,
         "hover:bg-emerald-100": !disabled,
         "active:bg-emerald-200": !disabled,
         "active:border-emerald-500": !disabled,
       },
       destructive: {
         "text-red-500": true,
+        "border-red-200": idleBorder && !disabled,
         "hover:bg-red-100": !disabled,
         "active:bg-red-200": !disabled,
         "active:border-red-500": !disabled,
