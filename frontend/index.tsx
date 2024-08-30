@@ -11,7 +11,10 @@ import * as ReactDOM from "react-dom/client";
 
 import App from "@ekad/App";
 import { DocProvider } from "@ekad/components/DocProvider";
-import { getCookie, setCookie } from "@ekad/cookies";
+import {
+  getAutomergeDocumentURL,
+  setAutomergeDocumentURL,
+} from "@ekad/repo/documentSelection";
 import type { Ekad } from "@ekad/types";
 
 const indexedDB = new IndexedDBStorageAdapter();
@@ -25,21 +28,21 @@ const repo = new Repo({
 function getRootDocHandle(): DocHandle<Ekad> {
   const locationHashURL = document.location.hash.substring(1);
   if (isValidAutomergeUrl(locationHashURL)) {
-    setCookie("automergeDocumentURL", locationHashURL);
+    setAutomergeDocumentURL(locationHashURL);
     return repo.find(locationHashURL);
   }
 
-  const cookieURL = getCookie("automergeDocumentURL");
-  if (isValidAutomergeUrl(cookieURL)) {
-    document.location.hash = cookieURL;
-    return repo.find(cookieURL);
+  const storedDocumentID = getAutomergeDocumentURL();
+  if (isValidAutomergeUrl(storedDocumentID)) {
+    document.location.hash = storedDocumentID;
+    return repo.find(storedDocumentID);
   }
 
   const handle = repo.create<Ekad>({
     tasks: {},
   });
   document.location.hash = handle.url;
-  setCookie("automergeDocumentURL", handle.url);
+  setAutomergeDocumentURL(handle.url);
   return handle;
 }
 
@@ -59,5 +62,9 @@ function AppWrapper() {
   }
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root")!);
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Failed to find element with id `root` to render React app.");
+}
+const root = ReactDOM.createRoot(rootElement);
 root.render(<AppWrapper />);
