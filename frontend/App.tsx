@@ -135,15 +135,6 @@ function ListView() {
           ))}
         </Fold>
       </div>
-
-      <Modal onRequestClose={() => setSelectedTask(null)} open={!!selectedTask}>
-        {selectedTask && (
-          <SelectedTaskPane
-            onSelectTask={setSelectedTask}
-            task={selectedTask}
-          />
-        )}
-      </Modal>
     </div>
   );
 

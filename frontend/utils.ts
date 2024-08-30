@@ -90,3 +90,8 @@ export function sortBy<T, U>(
     return smaller;
   });
 }
+
+export function updateTextAreaHeight(element: HTMLTextAreaElement): void {
+  element.style.height = "1px";
+  element.style.height = `${element.scrollHeight}px`;
+}

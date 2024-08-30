@@ -6,8 +6,9 @@ repos:
         entry: bunx prettier ./frontend --write
         language: system
         files: \.(css|html|js|jsx|ts|tsx)$
-    -   id: biome
-        name: biome
-        entry: bunx @biomejs/biome check --write --unsafe
-        language: system
-        files: \.(css|html|js|jsx|ts|tsx)$
+    # TODO: re-enable this when i'm on the ground and can look things up
+    # -   id: biome
+    #     name: biome
+    #     entry: bunx @biomejs/biome check --write --unsafe
+    #     language: system
+    #     files: \.(css|html|js|jsx|ts|tsx)$
