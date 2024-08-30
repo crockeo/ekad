@@ -12,16 +12,9 @@ export default function TaskGraphView({
 }) {
   const repo = useRepo();
   const [showCompleted, setShowCompleted] = useState(false);
-  const [graphData, setGraphData] = useState(buildGraphData());
-
-  // TODO: how do i set the deps of this such that it doesn't
-  // have to peek inside of the Repo?
-  useEffect(() => {
-    setGraphData(buildGraphData());
-  }, [repo.doc.tasks, showCompleted]);
 
   return (
-    <div className="border flex flex-col h-full rounded w-full">
+    <div className="flex flex-col h-full rounded w-full">
       <div className="border-b p-2">
         <input
           checked={showCompleted}
@@ -32,7 +25,7 @@ export default function TaskGraphView({
         <label>Show completed?</label>
       </div>
       <GraphView
-        data={graphData}
+        data={buildGraphData()}
         onNodeClick={(node) => onSelectNode?.(node.id)}
       />
     </div>
