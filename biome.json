@@ -1,7 +1,0 @@
-{
-  "organizeImports": { "enabled": true },
-  "formatter": {
-    "indentStyle": "space",
-    "indentWidth": 2
-  }
-}
