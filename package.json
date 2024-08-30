@@ -3,6 +3,7 @@
   "module": "index.tsx",
   "type": "module",
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0-rc.8",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/bun": "latest",
     "@types/react": "^18.3.3",
@@ -36,6 +37,8 @@
   },
   "scripts": {
     "dev": "vite serve frontend/",
-    "dev-public": "vite serve frontend/ --host=0.0.0.0"
+    "dev-public": "vite serve frontend/ --host=0.0.0.0",
+    "build": "vite build frontend/",
+    "tauri": "tauri dev"
   }
 }
