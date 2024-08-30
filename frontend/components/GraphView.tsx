@@ -12,7 +12,7 @@ export interface NodeObject extends ForceGraphNodeObject {
 }
 
 function isNodeObject(obj: object): obj is NodeObject {
-  return "id" in obj && typeof obj.id == "string" && "name" in obj;
+  return "id" in obj && typeof obj.id === "string" && "name" in obj;
 }
 
 export interface LinkObject extends ForceGraphLinkObject {}
@@ -39,7 +39,6 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
       .width(ref.current.clientWidth)
       .height(ref.current.clientHeight)
       .enableZoomInteraction(false)
-      .graphData(data)
       .onNodeClick((node, event) => {
         if (isNodeObject(node) && onNodeClick) {
           onNodeClick(node, event);

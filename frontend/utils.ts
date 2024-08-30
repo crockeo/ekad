@@ -68,7 +68,8 @@ export function sortBy<T, U>(
     ...options,
   };
 
-  let bigger, smaller;
+  let bigger;
+  let smaller;
   if (options.ascending) {
     bigger = 1;
     smaller = -1;
@@ -80,12 +81,12 @@ export function sortBy<T, U>(
   arr.sort((a, b) => {
     const aSortKey = sortKey(a);
     const bSortKey = sortKey(b);
-    if (aSortKey == bSortKey) {
+    if (aSortKey === bSortKey) {
       return 0;
-    } else if (aSortKey > bSortKey) {
-      return bigger;
-    } else {
-      return smaller;
     }
+    if (aSortKey > bSortKey) {
+      return bigger;
+    }
+    return smaller;
   });
 }
