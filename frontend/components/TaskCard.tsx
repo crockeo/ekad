@@ -34,6 +34,10 @@ export default function TaskCard({
   }, [viewMode, task.title]);
 
   useEffect(() => {
+    if (titleArea.current && viewMode == TaskCardViewMode.EXPANDED) {
+      titleArea.current.focus();
+    }
+
     if (titleArea.current && viewMode != TaskCardViewMode.EXPANDED) {
       titleArea.current.blur();
     }
@@ -48,7 +52,6 @@ export default function TaskCard({
         "px-2",
         "py-1",
         "rounded",
-        "transition",
         "active:[&:not(:focus-within)]:border-gray-400",
         {
           "hover:bg-gray-100": viewMode == TaskCardViewMode.DEFAULT,
@@ -122,25 +125,13 @@ export default function TaskCard({
         </Button>
       </div>
 
-      <div
-        className={classNames(
-          "delay-0",
-          "duration-500",
-          "ease-linear",
-          "overflow-hidden",
-          "transition-all",
-          {
-            "max-h-0": viewMode != TaskCardViewMode.EXPANDED,
-            "max-h-screen": viewMode == TaskCardViewMode.EXPANDED,
-          },
-        )}
-      >
+      {viewMode == TaskCardViewMode.EXPANDED && (
         <TaskCardBody
           expanded={viewMode == TaskCardViewMode.EXPANDED}
           onClick={onClick}
           task={task}
         />
-      </div>
+      )}
     </div>
   );
 }

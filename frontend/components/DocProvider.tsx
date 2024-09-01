@@ -70,7 +70,7 @@ export class Repo {
 
   setTitle(id: UUID, title: string): void {
     this.changeDoc((doc) => {
-      updateText(doc, ["tasks", id, "title"], title);
+      updateText(doc, ["tasks", id, "title"], title.replaceAll("\n", ""));
     });
   }
 
