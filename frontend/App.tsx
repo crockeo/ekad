@@ -83,6 +83,26 @@ function ListView() {
   const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
   const [expandTask, setExpandTask] = useState<boolean>(false);
 
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => {
+      console.log(e);
+      switch (e.code) {
+        case "ArrowDown":
+          return selectNextTask(e);
+        case "ArrowUp":
+          return selectPreviousTask(e);
+        case "Enter":
+          return expandSelectedTask();
+        case "Escape":
+          return condenseSelectedTask();
+      }
+    };
+    window.addEventListener("keydown", listener);
+    return () => {
+      window.removeEventListener("keydown", listener);
+    };
+  }, [selectedTask, expandTask]);
+
   return (
     <div
       className={classNames(
@@ -196,6 +216,80 @@ function ListView() {
       setSelectedTask(taskID);
       setExpandTask(false);
       return;
+    }
+  }
+
+  function selectNextTask(e: KeyboardEvent) {
+    if (expandTask) {
+      return;
+    }
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    const tasks = openTasks();
+    if (tasks.length === 0) {
+      return;
+    }
+
+    if (!selectedTask) {
+      setSelectedTask(tasks[0].id);
+      return;
+    }
+
+    for (let i = 0; i < tasks.length; i++) {
+      if (tasks[i].id != selectedTask) {
+        continue;
+      }
+      if (i >= tasks.length - 1) {
+        // We're at the end of the list, nothing we can do :/
+        return;
+      }
+      setSelectedTask(tasks[i + 1].id);
+    }
+  }
+
+  function selectPreviousTask(e: KeyboardEvent) {
+    if (expandTask) {
+      return;
+    }
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    const tasks = openTasks();
+    if (tasks.length === 0) {
+      return;
+    }
+
+    if (!selectedTask) {
+      setSelectedTask(tasks[tasks.length - 1].id);
+      return;
+    }
+
+    for (let i = 0; i < tasks.length; i++) {
+      if (tasks[i].id != selectedTask) {
+        continue;
+      }
+      if (i == 0) {
+        // We're at the beginning of the list, nothing we can do :/
+        return;
+      }
+      setSelectedTask(tasks[i - 1].id);
+    }
+  }
+
+  function expandSelectedTask() {
+    if (selectedTask) {
+      setExpandTask(true);
+    }
+  }
+
+  function condenseSelectedTask() {
+    if (expandTask) {
+      setExpandTask(false);
+    } else if (selectedTask) {
+      setSelectedTask(null);
     }
   }
 }

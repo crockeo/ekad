@@ -49,10 +49,10 @@ export default function TaskCard({
         "py-1",
         "rounded",
         "transition",
-        "hover:bg-gray-100",
         "active:[&:not(:focus-within)]:border-gray-400",
         {
-          "bg-gray-100": viewMode != TaskCardViewMode.DEFAULT,
+          "hover:bg-gray-100": viewMode == TaskCardViewMode.DEFAULT,
+          "bg-blue-100": viewMode != TaskCardViewMode.DEFAULT,
           "border-gray-400": viewMode != TaskCardViewMode.DEFAULT,
           "cursor-pointer": viewMode != TaskCardViewMode.EXPANDED,
         },
@@ -135,16 +135,22 @@ export default function TaskCard({
           },
         )}
       >
-        <TaskCardBody onClick={onClick} task={task} />
+        <TaskCardBody
+          expanded={viewMode == TaskCardViewMode.EXPANDED}
+          onClick={onClick}
+          task={task}
+        />
       </div>
     </div>
   );
 }
 
 function TaskCardBody({
+  expanded,
   onClick,
   task,
 }: {
+  expanded: boolean;
   onClick: (task: UUID) => void;
   task: Task;
 }) {
@@ -155,6 +161,12 @@ function TaskCardBody({
       updateTextAreaHeight(descriptionArea.current);
     }
   }, [task.description]);
+
+  useEffect(() => {
+    if (descriptionArea.current && !expanded) {
+      descriptionArea.current.blur();
+    }
+  }, [expanded]);
 
   return (
     <div className="flex flex-col space-y-2">
