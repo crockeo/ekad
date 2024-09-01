@@ -135,13 +135,19 @@ export default function TaskCard({
           },
         )}
       >
-        <TaskCardBody task={task} />
+        <TaskCardBody onClick={onClick} task={task} />
       </div>
     </div>
   );
 }
 
-function TaskCardBody({ task }: { task: Task }) {
+function TaskCardBody({
+  onClick,
+  task,
+}: {
+  onClick: (task: UUID) => void;
+  task: Task;
+}) {
   const repo = useRepo();
   const descriptionArea = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -179,7 +185,7 @@ function TaskCardBody({ task }: { task: Task }) {
           {Object.keys(repo.getTask(task.id).blocks).map((id) => (
             <TaskChip
               key={id}
-              onClick={() => {} /* onSelectTask(id) */}
+              onClick={() => onClick(id)}
               onRemove={() => repo.removeEdge(id, task.id)}
               task={repo.getTask(id)}
             />
@@ -196,7 +202,7 @@ function TaskCardBody({ task }: { task: Task }) {
           {Object.keys(repo.getTask(task.id).blockedBy).map((id) => (
             <TaskChip
               key={id}
-              onClick={() => {} /* onSelectTask(id) */}
+              onClick={() => onClick(id)}
               onRemove={() => repo.removeEdge(task.id, id)}
               task={repo.getTask(id)}
             />

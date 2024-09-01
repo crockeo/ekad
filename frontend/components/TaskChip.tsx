@@ -41,7 +41,10 @@ export default function TaskChip({
         },
       )}
       key={task.id}
-      onClick={() => onClick()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
     >
       {title}
       <span className="mx-2" />
