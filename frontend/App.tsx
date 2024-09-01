@@ -58,8 +58,10 @@ export default function App() {
       w-screen
       "
     >
-      <div className="h-full w-full">{viewFor(view)}</div>
-      <BottomBar view={view} setView={setView} />
+      <div className="h-[calc(100%-3rem)] w-full">{viewFor(view)}</div>
+      <div className="h-[3rem]">
+        <BottomBar view={view} setView={setView} />
+      </div>
     </div>
   );
 }
@@ -85,12 +87,13 @@ function ListView() {
       className={classNames(
         "flex",
         "flex-col",
-        "h-full",
         "m-auto",
         "px-1",
-        "py-2",
+        "h-full",
+        "pt-2",
         "space-y-1",
-        "w-[75vw]",
+        "w-screen",
+        "md:w-[75vw]",
       )}
     >
       <form
@@ -215,6 +218,7 @@ function BottomBar({
     <div
       className="
       border-gray-200
+      border-t
       flex
       flex-row
       justify-center
