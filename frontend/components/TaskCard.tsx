@@ -9,14 +9,20 @@ import TaskSearcher from "@ekad/components/TaskSearcher";
 import type { Task, UUID } from "@ekad/types";
 import { updateTextAreaHeight } from "@ekad/utils";
 
+export enum TaskCardViewMode {
+  DEFAULT,
+  SELECTED,
+  EXPANDED,
+}
+
 export default function TaskCard({
-  isSelected,
   onClick,
   task,
+  viewMode,
 }: {
-  isSelected: boolean;
   onClick: (task: UUID) => void;
   task: Task;
+  viewMode: TaskCardViewMode;
 }) {
   const repo = useRepo();
 
@@ -25,13 +31,13 @@ export default function TaskCard({
     if (titleArea.current) {
       updateTextAreaHeight(titleArea.current);
     }
-  }, [isSelected, task.title]);
+  }, [viewMode, task.title]);
 
   useEffect(() => {
-    if (titleArea.current && !isSelected) {
+    if (titleArea.current && viewMode != TaskCardViewMode.EXPANDED) {
       titleArea.current.blur();
     }
-  }, [isSelected]);
+  }, [viewMode]);
 
   return (
     <div
@@ -46,12 +52,15 @@ export default function TaskCard({
         "hover:bg-gray-100",
         "active:[&:not(:focus-within)]:border-gray-400",
         {
-          "bg-gray-100": isSelected,
-          "border-gray-400": isSelected,
-          "cursor-pointer": !isSelected,
+          "bg-gray-100": viewMode != TaskCardViewMode.DEFAULT,
+          "border-gray-400": viewMode != TaskCardViewMode.DEFAULT,
+          "cursor-pointer": viewMode != TaskCardViewMode.EXPANDED,
         },
       )}
-      onClick={() => onClick(task.id)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick(task.id);
+      }}
       key={task.id}
     >
       <div
@@ -85,14 +94,17 @@ export default function TaskCard({
             "w-full",
             {
               "line-through": task.completedAt,
-              "cursor-pointer": !isSelected,
+              "cursor-pointer": viewMode != TaskCardViewMode.EXPANDED,
             },
           )}
           onChange={(e) => repo.setTitle(task.id, e.target.value)}
-          onMouseDown={(e) => !isSelected && e.preventDefault()}
+          onMouseDown={(e) =>
+            viewMode != TaskCardViewMode.EXPANDED && e.preventDefault()
+          }
           onClick={(e) => {
-            if (!isSelected) {
+            if (viewMode != TaskCardViewMode.EXPANDED) {
               e.preventDefault();
+              e.stopPropagation();
               onClick(task.id);
             }
           }}
@@ -110,7 +122,7 @@ export default function TaskCard({
         </Button>
       </div>
 
-      {isSelected && <TaskCardBody task={task} />}
+      {viewMode == TaskCardViewMode.EXPANDED && <TaskCardBody task={task} />}
     </div>
   );
 }

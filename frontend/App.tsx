@@ -14,7 +14,7 @@ import { useRepo } from "@ekad/components/DocProvider";
 import Fold from "@ekad/components/Fold";
 import Modal from "@ekad/components/Modal";
 import SelectedTaskPane from "@ekad/components/SelectedTaskPane";
-import TaskCard from "@ekad/components/TaskCard";
+import TaskCard, { TaskCardViewMode } from "@ekad/components/TaskCard";
 import TaskGraphView from "@ekad/components/TaskGraphView";
 import TextInput from "@ekad/components/TextInput";
 import type { Task, UUID } from "@ekad/types";
@@ -81,6 +81,7 @@ function ListView() {
   const input = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
+  const [expandTask, setExpandTask] = useState<boolean>(false);
 
   return (
     <div
@@ -95,6 +96,7 @@ function ListView() {
         "w-screen",
         "md:w-[75vw]",
       )}
+      onClick={() => setExpandTask(false)}
     >
       <form
         className="
@@ -121,42 +123,25 @@ function ListView() {
       <div className="flex-grow space-y-1 overflow-y-auto">
         {openTasks().map((task) => (
           <TaskCard
-            isSelected={selectedTask === task.id}
             key={task.id}
-            onClick={setSelectedTask}
+            onClick={clickTask}
             task={task}
+            viewMode={taskCardViewMode(task.id)}
           />
         ))}
         <Fold name="Completed Tasks">
           {completedTasks().map((task) => (
             <TaskCard
-              isSelected={selectedTask === task.id}
               key={task.id}
-              onClick={setSelectedTask}
+              onClick={clickTask}
               task={task}
+              viewMode={taskCardViewMode(task.id)}
             />
           ))}
         </Fold>
       </div>
     </div>
   );
-
-  function openTasks(): Task[] {
-    const graph = buildTaskGraph(repo);
-    const order = [];
-    for (const generation of topologicalGenerations(graph).toReversed()) {
-      sortBy(generation, (id) => repo.getTask(id).title);
-      order.push(...generation);
-    }
-    return order.map((taskID) => repo.getTask(taskID));
-  }
-
-  function completedTasks(): Task[] {
-    return repo
-      .tasks()
-      .map((task) => repo.getTask(task))
-      .filter((task) => task.completedAt && !task.deletedAt);
-  }
 
   function newTask(e: FormEvent) {
     e.preventDefault();
@@ -175,6 +160,43 @@ function ListView() {
     setTitle("");
     repo.createTask(newTask);
     setSelectedTask(newTask.id);
+  }
+
+  function openTasks(): Task[] {
+    const graph = buildTaskGraph(repo);
+    const order = [];
+    for (const generation of topologicalGenerations(graph).toReversed()) {
+      sortBy(generation, (id) => repo.getTask(id).title);
+      order.push(...generation);
+    }
+    return order.map((taskID) => repo.getTask(taskID));
+  }
+
+  function completedTasks(): Task[] {
+    return repo
+      .tasks()
+      .map((task) => repo.getTask(task))
+      .filter((task) => task.completedAt && !task.deletedAt);
+  }
+
+  function taskCardViewMode(taskID: UUID): TaskCardViewMode {
+    if (selectedTask != taskID) {
+      return TaskCardViewMode.DEFAULT;
+    }
+    if (expandTask) {
+      return TaskCardViewMode.EXPANDED;
+    }
+    return TaskCardViewMode.SELECTED;
+  }
+
+  function clickTask(taskID: UUID) {
+    if (selectedTask == taskID) {
+      setExpandTask(true);
+    } else {
+      setSelectedTask(taskID);
+      setExpandTask(false);
+      return;
+    }
   }
 }
 
