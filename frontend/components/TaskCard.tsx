@@ -122,7 +122,21 @@ export default function TaskCard({
         </Button>
       </div>
 
-      {viewMode == TaskCardViewMode.EXPANDED && <TaskCardBody task={task} />}
+      <div
+        className={classNames(
+          "delay-0",
+          "duration-500",
+          "ease-linear",
+          "overflow-hidden",
+          "transition-all",
+          {
+            "max-h-0": viewMode != TaskCardViewMode.EXPANDED,
+            "max-h-screen": viewMode == TaskCardViewMode.EXPANDED,
+          },
+        )}
+      >
+        <TaskCardBody task={task} />
+      </div>
     </div>
   );
 }
