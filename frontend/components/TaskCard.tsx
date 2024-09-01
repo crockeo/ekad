@@ -1,6 +1,6 @@
 // Defines the TaskCard component, which lives on the left-hand-side of the main view.
 import classNames from "classnames";
-import { type ChangeEvent, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import Button from "@ekad/components/Button";
 import { useRepo } from "@ekad/components/DocProvider";
@@ -27,6 +27,12 @@ export default function TaskCard({
     }
   }, [isSelected, task.title]);
 
+  useEffect(() => {
+    if (titleArea.current && !isSelected) {
+      titleArea.current.blur();
+    }
+  }, [isSelected]);
+
   return (
     <div
       className={classNames(
@@ -38,10 +44,11 @@ export default function TaskCard({
         "rounded",
         "transition",
         "hover:bg-gray-100",
-        "active:border-gray-400",
+        "active:[&:not(:focus-within)]:border-gray-400",
         {
           "bg-gray-100": isSelected,
           "border-gray-400": isSelected,
+          "cursor-pointer": !isSelected,
         },
       )}
       onClick={() => onClick(task.id)}
@@ -61,42 +68,37 @@ export default function TaskCard({
       >
         <input
           className="
-        flex-none
-        h-4
-        w-4
-        "
+          flex-none
+          h-4
+          w-4
+          "
           checked={!!task.completedAt}
           onClick={(e) => e.stopPropagation()}
           onChange={(e) => repo.complete(task.id, e.target.checked)}
           type="checkbox"
         />
-        <div className="w-full">
-          {isSelected ? (
-            <textarea
-              className={classNames(
-                "bg-transparent",
-                "focus:outline-none",
-                "resize-none",
-                "w-full",
-                {
-                  "line-through": task.completedAt,
-                  "cursor-pointer": !isSelected,
-                },
-              )}
-              disabled={!isSelected}
-              onChange={(e) => repo.setTitle(task.id, e.target.value)}
-              onClick={(e) => {
-                if (!isSelected) {
-                  onClick(task.id);
-                }
-              }}
-              ref={titleArea}
-              value={task.title}
-            />
-          ) : (
-            <div>{task.title}</div>
+        <textarea
+          className={classNames(
+            "bg-transparent",
+            "focus:outline-none",
+            "resize-none",
+            "w-full",
+            {
+              "line-through": task.completedAt,
+              "cursor-pointer": !isSelected,
+            },
           )}
-        </div>
+          onChange={(e) => repo.setTitle(task.id, e.target.value)}
+          onMouseDown={(e) => !isSelected && e.preventDefault()}
+          onClick={(e) => {
+            if (!isSelected) {
+              e.preventDefault();
+              onClick(task.id);
+            }
+          }}
+          ref={titleArea}
+          value={task.title}
+        />
         <Button
           onClick={(e) => {
             e.stopPropagation();
@@ -124,6 +126,21 @@ function TaskCardBody({ task }: { task: Task }) {
 
   return (
     <div className="flex flex-col space-y-2">
+      <textarea
+        className="
+        bg-transparent
+        overflow-y-none
+        p-2
+        resize-none
+        w-full
+        focus:outline-none
+        "
+        onChange={(e) => repo.setDescription(task.id, e.target.value)}
+        placeholder="Description"
+        ref={descriptionArea}
+        value={task.description}
+      />
+
       <div
         className="
         grid
@@ -165,22 +182,6 @@ function TaskCardBody({ task }: { task: Task }) {
           />
         </div>
       </div>
-
-      <textarea
-        className="
-        border
-        overflow-y-none
-        p-2
-        resize-none
-        rounded
-        w-full
-        focus:outline-none
-        "
-        onChange={(e) => repo.setDescription(task.id, e.target.value)}
-        placeholder="Description"
-        ref={descriptionArea}
-        value={task.description}
-      />
     </div>
   );
 }
