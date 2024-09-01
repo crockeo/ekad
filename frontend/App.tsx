@@ -95,6 +95,14 @@ function ListView() {
           return expandSelectedTask();
         case "Escape":
           return condenseSelectedTask();
+        case "KeyK":
+          if (e.metaKey && selectedTask) {
+            repo.complete(
+              selectedTask,
+              !repo.getTask(selectedTask).completedAt,
+            );
+            return;
+          }
       }
     };
     window.addEventListener("keydown", listener);
