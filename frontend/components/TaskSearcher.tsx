@@ -17,7 +17,7 @@ export default function TaskSearcher({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
   return (
-    <>
+    <span>
       <Button onClick={() => setDialogOpen(true)} type="secondary">
         <div className="px-2 py-1 text-xs">Add +</div>
       </Button>
@@ -49,7 +49,7 @@ export default function TaskSearcher({
           </div>
         </div>
       </Modal>
-    </>
+    </span>
   );
 
   function getMatchingTasks(): Task[] {
