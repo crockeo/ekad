@@ -1,3 +1,4 @@
+import Modal from "./Modal";
 import { useState } from "react";
 
 import Button from "@ekad/components/Button";
@@ -21,59 +22,33 @@ export default function TaskSearcher({
         <div className="px-2 py-1 text-xs">Add +</div>
       </Button>
 
-      {dialogOpen && (
-        <>
-          <div
-            className="
-            bg-black/25
-            fixed
-            h-screen
-            left-0
-            top-0
-            w-screen
-            z-10
-            "
-            onClick={() => close()}
+      <Modal onRequestClose={close} open={dialogOpen}>
+        <div className="h-[90vh] w-[50vw]">
+          <input
+            className="block w-full focus:outline-none"
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Task Title"
+            type="text"
+            value={title}
           />
 
-          <div
-            className="
-            bg-white
-            border
-            drop-shadow
-            fixed
-            p-2
-            rounded
-            z-50
-            "
-            onClick={(e) => e.preventDefault()}
-          >
-            <input
-              className="block w-full focus:outline-none"
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Task Title"
-              type="text"
-              value={title}
-            />
+          <hr className="my-2" />
 
-            <hr className="my-2" />
-
-            <div className="space-y-1">
-              {getMatchingTasks().map((task) => (
-                <div
-                  className="
+          <div className="space-y-1">
+            {getMatchingTasks().map((task) => (
+              <div
+                className="
                   cursor-pointer
                   "
-                  key={task.id}
-                  onClick={() => chooseTask(task)}
-                >
-                  {task.title}
-                </div>
-              ))}
-            </div>
+                key={task.id}
+                onClick={() => chooseTask(task)}
+              >
+                {task.title}
+              </div>
+            ))}
           </div>
-        </>
-      )}
+        </div>
+      </Modal>
     </>
   );
 
