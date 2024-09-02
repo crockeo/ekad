@@ -63,6 +63,7 @@ export default function TaskCard({
     }
     const listener = (e: KeyboardEvent) => {
       if (e.code == "Tab") {
+        e.preventDefault();
         setFocusedElement((element) => {
           if (element == null) {
             element = 0;
