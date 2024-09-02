@@ -1,3 +1,4 @@
+import { useHotkeys } from "./components/HotkeyProvider";
 import classNames from "classnames";
 import { topologicalGenerations } from "graphology-dag";
 import {
@@ -28,6 +29,7 @@ enum View {
 export default function App() {
   const [view, setView] = useState(View.LIST);
 
+  const hotkeys = useHotkeys();
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
       if (e.code === "Tab") {
@@ -40,12 +42,11 @@ export default function App() {
               return View.LIST;
           }
         });
+        return true;
       }
+      return false;
     };
-    window.addEventListener("keydown", listener);
-    return () => {
-      window.removeEventListener("keydown", listener);
-    };
+    return hotkeys.addKeydownHandler(listener);
   }, []);
 
   return (
@@ -83,32 +84,34 @@ function ListView() {
   const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
   const [expandTask, setExpandTask] = useState<boolean>(false);
 
+  const hotkeys = useHotkeys();
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
-      console.log(e);
       switch (e.code) {
         case "ArrowDown":
-          return selectNextTask(e);
+          selectNextTask(e);
+          return true;
         case "ArrowUp":
-          return selectPreviousTask(e);
+          selectPreviousTask(e);
+          return true;
         case "Enter":
-          return expandSelectedTask();
+          expandSelectedTask();
+          return true;
         case "Escape":
-          return condenseSelectedTask();
+          condenseSelectedTask();
+          return true;
         case "KeyK":
           if (e.metaKey && selectedTask) {
             repo.complete(
               selectedTask,
               !repo.getTask(selectedTask).completedAt,
             );
-            return;
+            return true;
           }
       }
+      return false;
     };
-    window.addEventListener("keydown", listener);
-    return () => {
-      window.removeEventListener("keydown", listener);
-    };
+    return hotkeys.addKeydownHandler(listener);
   }, [selectedTask, expandTask]);
 
   return (

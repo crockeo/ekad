@@ -1,6 +1,7 @@
 // Defines the TaskCard component, which lives on the left-hand-side of the main view.
+import { useHotkeys } from "./HotkeyProvider";
 import classNames from "classnames";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Button from "@ekad/components/Button";
 import { useRepo } from "@ekad/components/DocProvider";
@@ -26,6 +27,8 @@ export default function TaskCard({
 }) {
   const repo = useRepo();
 
+  const taskCard = useRef<HTMLDivElement>(null);
+
   const titleArea = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (titleArea.current) {
@@ -42,6 +45,42 @@ export default function TaskCard({
       titleArea.current.blur();
     }
   }, [viewMode]);
+
+  const hotkeys = useHotkeys();
+  const [focusedElement, setFocusedElement] = useState<number | null>(0);
+  useEffect(() => {
+    if (viewMode != TaskCardViewMode.EXPANDED) {
+      setFocusedElement(0);
+      return;
+    }
+
+    const tabbable: Element[] = [];
+    if (taskCard.current) {
+      const children = taskCard.current.querySelectorAll(
+        "textarea:not([disabled])",
+      );
+      children.forEach((child) => tabbable.push(child));
+    }
+    const listener = (e: KeyboardEvent) => {
+      if (e.code == "Tab") {
+        e.preventDefault();
+        setFocusedElement((element) => {
+          if (element == null) {
+            element = 0;
+          } else {
+            element = element + 1;
+          }
+          element = element % tabbable.length;
+          tabbable[element].focus();
+          return element;
+        });
+
+        return true;
+      }
+      return false;
+    };
+    return hotkeys.addKeydownHandler(listener);
+  }, [focusedElement, viewMode]);
 
   return (
     <div
@@ -60,11 +99,12 @@ export default function TaskCard({
           "cursor-pointer": viewMode != TaskCardViewMode.EXPANDED,
         },
       )}
+      key={task.id}
       onClick={(e) => {
         e.stopPropagation();
         onClick(task.id);
       }}
-      key={task.id}
+      ref={taskCard}
     >
       <div
         className={classNames(

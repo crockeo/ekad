@@ -1,3 +1,4 @@
+import { HotkeysProvider } from "./components/HotkeyProvider";
 import {
   type DocHandle,
   Repo,
@@ -49,13 +50,11 @@ function getRootDocHandle(): DocHandle<Ekad> {
 const handle = getRootDocHandle();
 
 function AppWrapper() {
-  return (
-    <RepoContext.Provider value={openRepo()}>
-      <DocProvider docUrl={handle.url}>
-        <App />
-      </DocProvider>
-    </RepoContext.Provider>
-  );
+  let app = <App />;
+  app = <DocProvider docUrl={handle.url}>{app}</DocProvider>;
+  app = <HotkeysProvider>{app}</HotkeysProvider>;
+  app = <RepoContext.Provider value={openRepo()}>{app}</RepoContext.Provider>;
+  return app;
 
   function openRepo(): Repo {
     return repo;
