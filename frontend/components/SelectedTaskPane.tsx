@@ -57,7 +57,6 @@ export default function SelectedTaskPane({
         className="
         grid
         grid-cols-2
-        text-sm
         "
       >
         <div className="space-x-2">

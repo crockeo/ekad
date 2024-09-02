@@ -16,7 +16,6 @@ export default function Fold({ children, name }: PropsWithChildren<FoldProps>) {
         select-none
         italic
         ml-2
-        text-sm
         "
         onClick={() => setOpen(!open)}
       >
