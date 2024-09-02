@@ -1,5 +1,6 @@
+import { useHotkeys } from "./HotkeyProvider";
 import classNames from "classnames";
-import type { PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 
 interface ModalProps {
   onRequestClose: () => void;
@@ -11,6 +12,17 @@ export default function Modal({
   onRequestClose,
   open,
 }: PropsWithChildren<ModalProps>) {
+  const hotkeys = useHotkeys();
+  useEffect(() => {
+    return hotkeys.addKeydownHandler((e: KeyboardEvent) => {
+      if (open && e.code === "Escape") {
+        onRequestClose();
+        return true;
+      }
+      return open;
+    });
+  }, [open]);
+
   return (
     <>
       {open && (

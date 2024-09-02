@@ -1,5 +1,7 @@
+import { useHotkeys } from "./HotkeyProvider";
 import Modal from "./Modal";
-import { useState } from "react";
+import classNames from "classnames";
+import { useEffect, useState } from "react";
 
 import Button from "@ekad/components/Button";
 import type { Repo } from "@ekad/components/DocProvider";
@@ -16,6 +18,67 @@ export default function TaskSearcher({
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [selectedTask, setSelectedTask] = useState<number | null>(null);
+
+  useEffect(() => {
+    const matchingTasks = getMatchingTasks();
+    setSelectedTask((selectedTask) => {
+      if (!matchingTasks) {
+        return null;
+      }
+      if (selectedTask !== null && selectedTask >= matchingTasks.length) {
+        return matchingTasks.length;
+      }
+      return selectedTask;
+    });
+  }, [title]);
+
+  // TODO: these hotkeys don't work after i've entered a title + there's nothing left to match.
+  const hotkeys = useHotkeys();
+  useEffect(() => {
+    if (!dialogOpen) {
+      return;
+    }
+
+    return hotkeys.addKeydownHandler((e: KeyboardEvent) => {
+      if (e.code == "ArrowDown") {
+        e.preventDefault();
+        setSelectedTask((selectedTask) => {
+          if (selectedTask === null) {
+            return 0;
+          }
+          if (selectedTask < getMatchingTasks().length - 1) {
+            return selectedTask + 1;
+          }
+          return selectedTask;
+        });
+        return true;
+      } else if (e.code == "ArrowUp") {
+        e.preventDefault();
+        setSelectedTask((selectedTask) => {
+          if (selectedTask === null) {
+            return getMatchingTasks().length - 1;
+          }
+          if (selectedTask > 0) {
+            return selectedTask - 1;
+          }
+          return selectedTask;
+        });
+        return true;
+      } else if (e.code == "Enter") {
+        const matchingTasks = getMatchingTasks();
+        const task =
+          selectedTask === null ? undefined : getMatchingTasks()[selectedTask];
+        if (task) {
+          close();
+          onChooseTask(task.id);
+        }
+        return true;
+      }
+      return false;
+    });
+  }, [dialogOpen, selectedTask, title]);
+
   return (
     <span>
       <Button onClick={() => setDialogOpen(true)} type="secondary">
@@ -35,11 +98,11 @@ export default function TaskSearcher({
           <hr className="my-2" />
 
           <div className="space-y-1">
-            {getMatchingTasks().map((task) => (
+            {getMatchingTasks().map((task, i) => (
               <div
-                className="
-                  cursor-pointer
-                  "
+                className={classNames("cursor-pointer", "p-1", "rounded", {
+                  "bg-blue-100": selectedTask == i,
+                })}
                 key={task.id}
                 onClick={() => chooseTask(task)}
               >
