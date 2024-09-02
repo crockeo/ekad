@@ -18,16 +18,33 @@ import TextInput from "@ekad/components/TextInput";
 import type { Task, UUID } from "@ekad/types";
 import { buildTaskGraph, sortBy } from "@ekad/utils";
 
+enum TaskListViewType {
+  INBOX,
+  TODO,
+  COMPLETED,
+  TRASH,
+  TASK,
+}
+
+interface TaskListView {
+  type: TaskListViewType;
+  task?: UUID;
+}
+
 export default function ListView() {
+  const [taskListView, setTaskListView] = useState({
+    type: TaskListViewType.TODO,
+  });
+
   return (
     <div className={classNames("flex", "flex-row", "h-full")}>
-      <SideBar />
-      <TaskList />
+      <SideBar setTaskListView={setTaskListView} taskListView={taskListView} />
+      <TaskList taskListView={taskListView} />
     </div>
   );
 }
 
-function TaskList() {
+function TaskList({ taskListView }: { taskListView: TaskListView }) {
   const repo = useRepo();
 
   const input = useRef<HTMLInputElement>(null);
@@ -144,6 +161,8 @@ function TaskList() {
     setSelectedTask(newTask.id);
   }
 
+  // TODO: replace this with a function that just returns the tasks
+  // for the given view
   function openTasks(): Task[] {
     const graph = buildTaskGraph(repo);
     const order = [];
@@ -256,7 +275,13 @@ function TaskList() {
   }
 }
 
-function SideBar() {
+function SideBar({
+  setTaskListView,
+  taskListView,
+}: {
+  setTaskListView: (taskListView: TaskListView) => void;
+  taskListView: TaskListView;
+}) {
   const repo = useRepo();
   const { numInbox, areas } = getTaskGroups();
   return (
@@ -270,16 +295,50 @@ function SideBar() {
         "w-[25vw]",
       )}
     >
-      <SideBarCategory>Inbox {numInbox > 0 && numInbox}</SideBarCategory>
+      <SideBarCategory
+        isSelected={taskListView.type == TaskListViewType.INBOX}
+        onClick={() => setTaskListView({ type: TaskListViewType.INBOX })}
+      >
+        Inbox {numInbox > 0 && numInbox}
+      </SideBarCategory>
 
       <div>
-        <SideBarCategory>Completed</SideBarCategory>
-        <SideBarCategory>Trash</SideBarCategory>
+        <SideBarCategory
+          isSelected={taskListView.type == TaskListViewType.TODO}
+          onClick={() => setTaskListView({ type: TaskListViewType.TODO })}
+        >
+          To Do
+        </SideBarCategory>
+
+        <SideBarCategory
+          isSelected={taskListView.type == TaskListViewType.COMPLETED}
+          onClick={() => setTaskListView({ type: TaskListViewType.COMPLETED })}
+        >
+          Completed
+        </SideBarCategory>
+
+        <SideBarCategory
+          isSelected={taskListView.type == TaskListViewType.TRASH}
+          onClick={() => setTaskListView({ type: TaskListViewType.TRASH })}
+        >
+          Trash
+        </SideBarCategory>
       </div>
 
       <div>
         {areas.map((task) => (
-          <SideBarCategory key={task.id}>{task.title}</SideBarCategory>
+          <SideBarCategory
+            isSelected={
+              taskListView.type == TaskListViewType.TASK &&
+              taskListView.task == task.id
+            }
+            key={task.id}
+            onClick={() =>
+              setTaskListView({ type: TaskListViewType.TASK, task: task.id })
+            }
+          >
+            {task.title}
+          </SideBarCategory>
         ))}
       </div>
     </div>
@@ -311,18 +370,30 @@ function SideBar() {
   }
 }
 
-function SideBarCategory({ children }: PropsWithChildren) {
+function SideBarCategory({
+  children,
+  isSelected,
+  onClick,
+}: PropsWithChildren<{ isSelected: boolean; onClick: () => void }>) {
   return (
     <div
       className={classNames(
+        "border",
+        "border-transparent",
         "cursor-pointer",
-        "transition",
         "px-2",
         "py-1",
         "rounded",
-        "hover:bg-blue-100",
-        "active:bg-blue-200",
+        "transition",
+        "active:bg-blue-100",
+        "active:border-blue-400",
+        {
+          "hover:bg-gray-100": !isSelected,
+          "bg-blue-100": isSelected,
+          "border-blue-400": isSelected,
+        },
       )}
+      onClick={onClick}
     >
       {children}
     </div>

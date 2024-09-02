@@ -91,11 +91,13 @@ export default function TaskCard({
         "px-2",
         "py-1",
         "rounded",
-        "active:[&:not(:focus-within)]:border-gray-400",
+        "transition",
+        "active:[&:not(:focus-within)]:border-blue-400",
         {
+          "active:bg-blue-100": viewMode == TaskCardViewMode.DEFAULT,
           "hover:bg-gray-100": viewMode == TaskCardViewMode.DEFAULT,
           "bg-blue-100": viewMode != TaskCardViewMode.DEFAULT,
-          "border-gray-400": viewMode != TaskCardViewMode.DEFAULT,
+          "border-blue-400": viewMode != TaskCardViewMode.DEFAULT,
           "cursor-pointer": viewMode != TaskCardViewMode.EXPANDED,
         },
       )}
