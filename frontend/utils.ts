@@ -1,8 +1,9 @@
 import { DirectedGraph } from "graphology";
 
 import type { Repo } from "@ekad/components/DocProvider";
+import type { UUID } from "@ekad/types";
 
-// taskGraph takes the list representation of tasks inside of an Automerge document
+// buildTaskGraph takes the list representation of tasks inside of an Automerge document
 // and converts them into a graphology DirectedGraph.
 export function buildTaskGraph(
   repo: Repo,
@@ -47,6 +48,46 @@ export function buildTaskGraph(
         }
       }
       graph.dropNode(node);
+    }
+  }
+
+  return graph;
+}
+
+export function buildTaskSubgraph(
+  repo: Repo,
+  rootTaskID: UUID,
+  options?: { showCompleted?: boolean },
+): DirectedGraph {
+  if (!options) {
+    options = {};
+  }
+  options = {
+    showCompleted: false,
+    ...(options || {}),
+  };
+
+  const graph = new DirectedGraph();
+
+  const seen = new Set<UUID>();
+  const stack = [rootTaskID];
+  let nextTaskID: string | undefined;
+  while ((nextTaskID = stack.pop())) {
+    const nextTask = repo.getTask(nextTaskID);
+    for (const blockedByID of Object.keys(nextTask.blockedBy)) {
+      if (seen.has(blockedByID)) {
+        continue;
+      }
+      seen.add(blockedByID);
+
+      const blockedBy = repo.getTask(blockedByID);
+      if (blockedBy.deletedAt) {
+        continue;
+      }
+      if (!blockedBy.completedAt || options.showCompleted) {
+        stack.push(blockedByID);
+        graph.mergeEdge(nextTaskID, blockedByID);
+      }
     }
   }
 

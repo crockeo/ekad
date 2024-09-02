@@ -16,7 +16,7 @@ import { useHotkeys } from "@ekad/components/HotkeyProvider";
 import TaskCard, { TaskCardViewMode } from "@ekad/components/TaskCard";
 import TextInput from "@ekad/components/TextInput";
 import type { Task, UUID } from "@ekad/types";
-import { buildTaskGraph, sortBy } from "@ekad/utils";
+import { buildTaskGraph, buildTaskSubgraph, sortBy } from "@ekad/utils";
 
 enum TaskListViewType {
   INBOX,
@@ -120,7 +120,7 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
       </form>
 
       <div className="flex-grow space-y-1 overflow-y-auto">
-        {openTasks().map((task) => (
+        {tasksForView().map((task) => (
           <TaskCard
             key={task.id}
             onClick={clickTask}
@@ -128,16 +128,6 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
             viewMode={taskCardViewMode(task.id)}
           />
         ))}
-        <Fold name="Completed Tasks">
-          {completedTasks().map((task) => (
-            <TaskCard
-              key={task.id}
-              onClick={clickTask}
-              task={task}
-              viewMode={taskCardViewMode(task.id)}
-            />
-          ))}
-        </Fold>
       </div>
     </div>
   );
@@ -161,23 +151,57 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
     setSelectedTask(newTask.id);
   }
 
-  // TODO: replace this with a function that just returns the tasks
-  // for the given view
-  function openTasks(): Task[] {
-    const graph = buildTaskGraph(repo);
-    const order = [];
-    for (const generation of topologicalGenerations(graph).toReversed()) {
-      sortBy(generation, (id) => repo.getTask(id).title);
-      order.push(...generation);
-    }
-    return order.map((taskID) => repo.getTask(taskID));
-  }
+  function tasksForView(): Task[] {
+    switch (taskListView.type) {
+      case TaskListViewType.INBOX:
+        return repo
+          .tasks()
+          .map((taskID) => repo.getTask(taskID))
+          .filter(
+            (task) =>
+              !task.completedAt &&
+              !task.deletedAt &&
+              Object.keys(task.blocks).length == 0 &&
+              Object.keys(task.blockedBy).length == 0,
+          );
 
-  function completedTasks(): Task[] {
-    return repo
-      .tasks()
-      .map((task) => repo.getTask(task))
-      .filter((task) => task.completedAt && !task.deletedAt);
+      case TaskListViewType.TODO:
+        const graph = buildTaskGraph(repo);
+        const order = [];
+        for (const generation of topologicalGenerations(graph).toReversed()) {
+          sortBy(generation, (id) => repo.getTask(id).title);
+          order.push(...generation);
+        }
+        return order.map((taskID) => repo.getTask(taskID));
+
+      case TaskListViewType.COMPLETED:
+        return repo
+          .tasks()
+          .map((taskID) => repo.getTask(taskID))
+          .filter((task) => task.completedAt && !task.deletedAt);
+
+      case TaskListViewType.TRASH:
+        return repo
+          .tasks()
+          .map((taskID) => repo.getTask(taskID))
+          .filter((task) => task.deletedAt);
+
+      case TaskListViewType.TASK:
+        if (!taskListView.task) {
+          throw new Error(
+            "Cannot have `TaskListViewType.TASK` without associated task ID.",
+          );
+        }
+        const subGraph = buildTaskSubgraph(repo, taskListView.task);
+        const subOrder = [];
+        for (const generation of topologicalGenerations(
+          subGraph,
+        ).toReversed()) {
+          sortBy(generation, (id) => repo.getTask(id).title);
+          subOrder.push(...generation);
+        }
+        return subOrder.map((taskID) => repo.getTask(taskID));
+    }
   }
 
   function taskCardViewMode(taskID: UUID): TaskCardViewMode {
@@ -208,7 +232,7 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
     e.stopPropagation();
     e.preventDefault();
 
-    const tasks = openTasks();
+    const tasks = tasksForView();
     if (tasks.length === 0) {
       return;
     }
@@ -238,7 +262,7 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
     e.stopPropagation();
     e.preventDefault();
 
-    const tasks = openTasks();
+    const tasks = tasksForView();
     if (tasks.length === 0) {
       return;
     }
