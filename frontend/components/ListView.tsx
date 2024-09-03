@@ -52,6 +52,11 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
   const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
   const [expandTask, setExpandTask] = useState<boolean>(false);
 
+  useEffect(() => {
+    setSelectedTask(null);
+    setExpandTask(false);
+  }, [taskListView]);
+
   const hotkeys = useHotkeys();
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
@@ -179,10 +184,14 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
         return order.map((taskID) => repo.getTask(taskID));
 
       case TaskListViewType.COMPLETED:
-        return repo
+        const completedTasks = repo
           .tasks()
           .map((taskID) => repo.getTask(taskID))
           .filter((task) => task.completedAt && !task.deletedAt);
+        sortBy(completedTasks, (task) => task.completedAt, {
+          ascending: false,
+        });
+        return completedTasks;
 
       case TaskListViewType.TRASH:
         return repo
@@ -315,6 +324,29 @@ function SideBar({
 }) {
   const repo = useRepo();
   const { numInbox, areas } = getTaskGroups();
+
+  const hotkeys = useHotkeys();
+  useEffect(() => {
+    return hotkeys.addKeydownHandler((e: KeyboardEvent) => {
+      if (!e.metaKey) {
+        return false;
+      }
+
+      if (e.code == "Digit1") {
+        setTaskListView({ type: TaskListViewType.INBOX });
+      } else if (e.code == "Digit2") {
+        setTaskListView({ type: TaskListViewType.TODO });
+      } else if (e.code == "Digit3") {
+        setTaskListView({ type: TaskListViewType.COMPLETED });
+      } else if (e.code == "Digit4") {
+        setTaskListView({ type: TaskListViewType.TRASH });
+      } else {
+        return false;
+      }
+      return true;
+    });
+  }, []);
+
   return (
     <div
       className={classNames(
