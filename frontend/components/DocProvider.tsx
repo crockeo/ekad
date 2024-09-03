@@ -100,6 +100,18 @@ export class Repo {
     });
   }
 
+  hardDelete(id: UUID): void {
+    this.changeDoc((doc) => {
+      for (const blocks of Object.keys(doc.tasks[id].blocks)) {
+        delete doc.tasks[blocks].blockedBy[id];
+      }
+      for (const blockedBy of Object.keys(doc.tasks[id].blockedBy)) {
+        delete doc.tasks[blockedBy].blocks[id];
+      }
+      delete doc.tasks[id];
+    });
+  }
+
   addEdge(from: UUID, to: UUID): void {
     // TODO: check that this does not create a cycle.
     this.changeDoc((doc) => {

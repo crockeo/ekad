@@ -67,6 +67,9 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
         case "ArrowUp":
           selectPreviousTask(e);
           return true;
+        case "Backspace":
+          deleteSelectedTask(e);
+          return true;
         case "Enter":
           expandSelectedTask();
           return true;
@@ -298,6 +301,21 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
       }
       setSelectedTask(tasks[i - 1].id);
     }
+  }
+
+  function deleteSelectedTask(e: KeyboardEvent) {
+    if (!selectedTask || expandTask) {
+      return;
+    }
+
+    const task = repo.getTask(selectedTask);
+    if (!task.deletedAt) {
+      repo.delete(selectedTask);
+    } else {
+      repo.hardDelete(selectedTask);
+    }
+
+    selectNextTask(e);
   }
 
   function expandSelectedTask() {

@@ -156,15 +156,6 @@ export default function TaskCard({
           ref={titleArea}
           value={task.title}
         />
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            repo.delete(task.id);
-          }}
-          type="destructive"
-        >
-          <div className="w-6 h-6">×</div>
-        </Button>
       </div>
 
       {viewMode == TaskCardViewMode.EXPANDED && (
