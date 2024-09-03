@@ -105,6 +105,10 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
         px-2
         space-x-1
         "
+        onFocus={() => {
+          setSelectedTask(null);
+          setExpandTask(false);
+        }}
         onSubmit={newTask}
       >
         <TextInput
@@ -215,6 +219,9 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
   }
 
   function clickTask(taskID: UUID) {
+    if (input.current) {
+      input.current.blur();
+    }
     if (selectedTask == taskID) {
       setExpandTask(true);
     } else {
@@ -326,6 +333,8 @@ function SideBar({
         Inbox {numInbox > 0 && numInbox}
       </SideBarCategory>
 
+      <hr />
+
       <div>
         <SideBarCategory
           isSelected={taskListView.type == TaskListViewType.TODO}
@@ -348,6 +357,8 @@ function SideBar({
           Trash
         </SideBarCategory>
       </div>
+
+      <hr />
 
       <div>
         {areas.map((task) => (
