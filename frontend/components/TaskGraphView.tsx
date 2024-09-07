@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import GraphView, { type GraphData } from "@ekad/components/ArchiveGraphView";
 import { useRepo } from "@ekad/components/DocProvider";
-import GraphView, { type GraphData } from "@ekad/components/GraphView";
 import type { UUID } from "@ekad/types";
 import { buildTaskGraph } from "@ekad/utils";
 
