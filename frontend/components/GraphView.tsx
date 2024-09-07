@@ -7,12 +7,20 @@ import { useEffect, useRef } from "react";
 
 export interface NodeObject extends ForceGraphNodeObject {
   id: string;
+  x: number;
+  y: number;
   name: string;
   nodeColor?: string;
 }
 
 function isNodeObject(obj: object): obj is NodeObject {
-  return "id" in obj && typeof obj.id === "string" && "name" in obj;
+  return (
+    "id" in obj &&
+    typeof obj.id === "string" &&
+    "name" in obj &&
+    "x" in obj &&
+    "y" in obj
+  );
 }
 
 export interface LinkObject extends ForceGraphLinkObject {}
@@ -25,9 +33,14 @@ export interface GraphData {
 interface GraphViewProps {
   data: GraphData;
   onNodeClick?: (node: NodeObject, event: MouseEvent) => void;
+  onNodeDrag?: (node: NodeObject) => void;
 }
 
-export default function GraphView({ data, onNodeClick }: GraphViewProps) {
+export default function GraphView({
+  data,
+  onNodeClick,
+  onNodeDrag,
+}: GraphViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   const graph = useRef<ForceGraphInstance>(ForceGraph());
 
@@ -42,6 +55,11 @@ export default function GraphView({ data, onNodeClick }: GraphViewProps) {
       .onNodeClick((node, event) => {
         if (isNodeObject(node) && onNodeClick) {
           onNodeClick(node, event);
+        }
+      })
+      .onNodeDrag((node) => {
+        if (isNodeObject(node) && onNodeDrag) {
+          onNodeDrag(node);
         }
       })
       .nodeCanvasObjectMode(() => "after")

@@ -2,6 +2,8 @@ export type UUID = string;
 
 export interface Task {
   id: UUID;
+  x: number;
+  y: number;
   title: string;
   description: string;
   completedAt: Date | null;

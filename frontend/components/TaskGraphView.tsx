@@ -27,6 +27,7 @@ export default function TaskGraphView({
       <GraphView
         data={buildGraphData()}
         onNodeClick={(node) => onSelectNode?.(node.id)}
+        onNodeDrag={(node) => repo.setPosition(node.id, node.x, node.y)}
       />
     </div>
   );
@@ -41,6 +42,8 @@ export default function TaskGraphView({
       const task = repo.getTask(node);
       graphData.nodes.push({
         id: task.id,
+        x: task.x,
+        y: task.y,
         name: task.title,
         nodeColor: task.completedAt ? "rgb(16 185 129)" : "#000000",
       });

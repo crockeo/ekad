@@ -80,6 +80,13 @@ export class Repo {
     });
   }
 
+  setPosition(id: UUID, x: number, y: number): void {
+    this.changeDoc((doc) => {
+      doc.tasks[id].x = x;
+      doc.tasks[id].y = y;
+    });
+  }
+
   complete(id: UUID, isComplete: boolean): void {
     this.changeDoc((doc) => {
       doc.tasks[id].completedAt = isComplete ? new Date() : null;
