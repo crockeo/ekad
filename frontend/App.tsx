@@ -1,12 +1,9 @@
 import { type ReactElement, useEffect, useState } from "react";
 
 import Button from "@ekad/components/Button";
+import GraphView from "@ekad/components/GraphView";
 import { useHotkeys } from "@ekad/components/HotkeyProvider";
 import ListView from "@ekad/components/ListView";
-import Modal from "@ekad/components/Modal";
-import SelectedTaskPane from "@ekad/components/SelectedTaskPane";
-import TaskGraphView from "@ekad/components/TaskGraphView";
-import type { UUID } from "@ekad/types";
 
 enum View {
   LIST = 0,
@@ -62,24 +59,6 @@ function viewFor(view: View): ReactElement {
     case View.GRAPH:
       return <GraphView />;
   }
-}
-
-function GraphView() {
-  const [selectedTask, setSelectedTask] = useState<UUID | null>(null);
-  return (
-    <div className="h-full w-full">
-      <TaskGraphView onSelectNode={(id) => setSelectedTask(id)} />
-
-      <Modal onRequestClose={() => setSelectedTask(null)} open={!!selectedTask}>
-        {selectedTask && (
-          <SelectedTaskPane
-            onSelectTask={setSelectedTask}
-            task={selectedTask}
-          />
-        )}
-      </Modal>
-    </div>
-  );
 }
 
 function BottomBar({
