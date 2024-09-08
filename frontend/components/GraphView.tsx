@@ -40,22 +40,6 @@ export default function GraphView() {
         const blockedBy = repo.getTask(blockedByID);
         scene.current.setEdge(task, blockedBy);
       }
-
-      // const taskCircle = Two.makeCircle(task.x + dx, task.y + dy, 20);
-      // taskCircle.fill = "green";
-      // ctx.beginPath();
-      // ctx.fillStyle = "green";
-      // ctx.strokeStyle = "green";
-
-      // ctx.arc(task.x + dx, task.y + dy, 20, 0, 2 * Math.PI);
-      // ctx.fill();
-
-      // for (const blockedByID of Object.keys(task.blockedBy)) {
-      //   const blockedBy = repo.getTask(blockedByID);
-      //   ctx.moveTo(task.x + dx, task.y + dy);
-      //   ctx.lineTo(blockedBy.x + dx, blockedBy.y + dy);
-      // }
-      // ctx.stroke();
     }
   }
 }
@@ -121,9 +105,10 @@ class GraphScene {
 
     const line = this.edges.get([fromTask.id, toTask.id]);
     if (line) {
-      // TODO: how do i set both segments here?
-      line.position.x = fromX;
-      line.position.y = fromY;
+      line.left.x = fromX;
+      line.left.y = fromY;
+      line.right.x = toX;
+      line.right.x = toY;
     } else {
       this.edges.set(
         [fromTask.id, toTask.id],
