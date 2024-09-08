@@ -148,8 +148,10 @@ function TaskList({ taskListView }: { taskListView: TaskListView }) {
     e.preventDefault();
 
     const id = uuidv7();
-    const newTask = {
+    const newTask: Task = {
       id: id,
+      x: 0,
+      y: 0,
       title: title,
       description: "",
       completedAt: null,
