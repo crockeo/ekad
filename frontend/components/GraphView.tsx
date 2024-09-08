@@ -57,7 +57,11 @@ export default function GraphView() {
       // Magic: macOS and Windows laptops with zoom
       // set `WheelEvent.ctrlKey = true`
       // when it's a pinch event, and false otherwise.
-      scene.current.zoom(-event.deltaY / 100);
+      scene.current.zoom(
+        event.clientX - ref.current.clientLeft,
+        event.clientY - ref.current.clientTop,
+        -event.deltaY / 100,
+      );
       render();
     } else {
       scene.current.pan(-event.deltaX, -event.deltaY);
@@ -89,8 +93,18 @@ class GraphScene {
     this.affine.thenTranslate(dx, dy);
   }
 
-  zoom(dz: number): void {
-    this.affine.thenScale(1.0 + dz, 1.0 + dz);
+  zoom(mouseX: number, mouseY: number, dz: number): void {
+    const [offsetX, offsetY] = transformMat3x3(
+      inverseMat3x3(this.affine.matrix),
+      mouseX,
+      mouseY,
+    );
+    const translation = translationMat3x3(offsetX, offsetY);
+    let mat = this.affine.matrix;
+    mat = mulMat3x3(mat, translation);
+    mat = mulMat3x3(mat, scaleMat3x3(1.0 + dz));
+    mat = mulMat3x3(mat, inverseMat3x3(translation));
+    this.affine.matrix = mat;
   }
 
   taskIDs(): IterableIterator<UUID> {
@@ -311,4 +325,14 @@ function inverseMat3x3(m: number[][]): number[][] {
       (a * e - b * d) * invDet,
     ],
   ];
+}
+
+function transformMat3x3(
+  m: number[][],
+  x: number,
+  y: number,
+): [number, number] {
+  const px = x * m[0][0] + y * m[0][1] + m[0][2];
+  const py = x * m[1][0] + y * m[1][1] + m[1][2];
+  return [px, py];
 }
