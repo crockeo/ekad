@@ -1,58 +1,134 @@
 import { useEffect, useRef } from "react";
+import Two from "two.js";
+import type { Circle } from "two.js/src/shapes/circle";
+import type { Line } from "two.js/src/shapes/line";
 
 import { useRepo } from "@ekad/components/DocProvider";
+import type { Task, UUID } from "@ekad/types";
 
 export default function GraphView() {
   const repo = useRepo();
-  const renderCanvas = useRef<HTMLCanvasElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const scene = useRef<GraphScene>(new GraphScene());
 
   useEffect(() => {
-    if (!renderCanvas.current) {
+    if (!ref.current) {
       return;
     }
+    const two = scene.current.two;
 
-    const resizeObserver = new ResizeObserver(() => {
-      if (!renderCanvas.current) {
-        return;
-      }
-      renderCanvas.current.width = renderCanvas.current.clientWidth * 2;
-      renderCanvas.current.height = renderCanvas.current.clientHeight * 2;
-      render();
-    });
-    resizeObserver.observe(renderCanvas.current);
-
+    two.appendTo(ref.current);
+    two.play();
     render();
-  }, [renderCanvas.current]);
 
-  return <canvas className="h-full w-full" ref={renderCanvas}></canvas>;
+    return () => {
+      ref.current?.removeChild(two.renderer.domElement);
+      two.pause();
+    };
+  }, [ref]);
+
+  return <div className="h-full w-full" ref={ref} />;
 
   function render() {
-    if (!renderCanvas.current) {
+    if (!ref.current) {
       return;
     }
-    const ctx = renderCanvas.current.getContext("2d");
-    if (!ctx) {
-      return;
-    }
-
-    const dx = renderCanvas.current.width / 2;
-    const dy = renderCanvas.current.height / 2;
     for (const taskID of repo.tasks()) {
       const task = repo.getTask(taskID);
-
-      ctx.beginPath();
-      ctx.fillStyle = "green";
-      ctx.strokeStyle = "green";
-
-      ctx.arc(task.x + dx, task.y + dy, 20, 0, 2 * Math.PI);
-      ctx.fill();
-
+      scene.current.setTask(task);
       for (const blockedByID of Object.keys(task.blockedBy)) {
         const blockedBy = repo.getTask(blockedByID);
-        ctx.moveTo(task.x + dx, task.y + dy);
-        ctx.lineTo(blockedBy.x + dx, blockedBy.y + dy);
+        scene.current.setEdge(task, blockedBy);
       }
-      ctx.stroke();
+
+      // const taskCircle = Two.makeCircle(task.x + dx, task.y + dy, 20);
+      // taskCircle.fill = "green";
+      // ctx.beginPath();
+      // ctx.fillStyle = "green";
+      // ctx.strokeStyle = "green";
+
+      // ctx.arc(task.x + dx, task.y + dy, 20, 0, 2 * Math.PI);
+      // ctx.fill();
+
+      // for (const blockedByID of Object.keys(task.blockedBy)) {
+      //   const blockedBy = repo.getTask(blockedByID);
+      //   ctx.moveTo(task.x + dx, task.y + dy);
+      //   ctx.lineTo(blockedBy.x + dx, blockedBy.y + dy);
+      // }
+      // ctx.stroke();
+    }
+  }
+}
+
+// GraphScene providers a wrapper around Two
+// which lets us capture the state of our scene graph
+// inside of a class, rather than inside of the React component.
+class GraphScene {
+  two: Two;
+  tasks: Map<UUID, Circle>;
+  edges: Map<[UUID, UUID], Line>;
+
+  constructor() {
+    this.two = new Two(new Two({ fitted: true }));
+    this.tasks = new Map();
+    this.edges = new Map();
+  }
+
+  #transform(x: number, y: number): [number, number] {
+    const dx = this.two.width / 2;
+    const dy = this.two.height / 2;
+    return [x + dx, y + dy];
+  }
+
+  taskIDs(): IterableIterator<UUID> {
+    return this.tasks.keys();
+  }
+
+  edgeIDs(): IterableIterator<[UUID, UUID]> {
+    return this.edges.keys();
+  }
+
+  removeTask(taskID: UUID): void {
+    const task = this.tasks.get(taskID);
+    if (task) {
+      this.two.remove(task);
+      this.tasks.delete(taskID);
+    }
+  }
+
+  setTask(task: Task): void {
+    const [x, y] = this.#transform(task.x, task.y);
+    const circle = this.tasks.get(task.id);
+    if (circle) {
+      circle.position.x = x;
+      circle.position.y = y;
+    } else {
+      this.tasks.set(task.id, this.two.makeCircle(x, y, 20));
+    }
+  }
+
+  removeEdge(fromTaskID: UUID, toTaskID: UUID): void {
+    const line = this.edges.get([fromTaskID, toTaskID]);
+    if (line) {
+      this.two.remove(line);
+      this.edges.delete([fromTaskID, toTaskID]);
+    }
+  }
+
+  setEdge(fromTask: Task, toTask: Task): void {
+    const [fromX, fromY] = this.#transform(fromTask.x, fromTask.y);
+    const [toX, toY] = this.#transform(toTask.x, toTask.y);
+
+    const line = this.edges.get([fromTask.id, toTask.id]);
+    if (line) {
+      // TODO: how do i set both segments here?
+      line.position.x = fromX;
+      line.position.y = fromY;
+    } else {
+      this.edges.set(
+        [fromTask.id, toTask.id],
+        this.two.makeLine(fromX, fromY, toX, toY),
+      );
     }
   }
 }
