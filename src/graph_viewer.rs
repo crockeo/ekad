@@ -47,6 +47,10 @@ use crate::shapes;
 //     so we don't have to re-calculate a bunch of stuff around
 //     circles and lines and stuff like that.
 
+// TODO: set it up so that you can delete edges, not just nodes
+// this is for sure going to need some underlying changes
+// because i'm going to need to determine what """selecting""" and edge means
+
 const CIRCLE_RADIUS: f64 = 40.0;
 
 const BASE_COLOR: Color = Color {
