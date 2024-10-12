@@ -163,15 +163,11 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             self.gesture = match (space_pressed, self.hovered_circle()) {
                 (false, None) => Gesture::AddingNode,
                 (false, Some(circle)) => Gesture::AddingEdge { from: circle },
-                (true, None) => {
-                    ctx.set_cursor(&CursorIcon::Grabbing);
-                    Gesture::Panning
-                }
+                (true, None) => Gesture::Panning,
                 (true, Some(circle)) => {
                     let mouse_position = self
                         .mouse_position()
                         .expect("Must have mouse_position() if you also have hovered_circle()");
-                    ctx.set_cursor(&CursorIcon::Grabbing);
                     Gesture::MovingNode {
                         node_id: circle,
                         initial_distance: self.graph.get_node(circle).unwrap().circle.center
@@ -185,12 +181,6 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
         if let PointerEvent::PointerUp(_, _) = event {
             let hovered_circle = self.hovered_circle();
             let mouse_position = self.mouse_position();
-
-            if self.hotkey_state[Hotkey::Space] {
-                ctx.set_cursor(&CursorIcon::Grab);
-            } else {
-                ctx.clear_cursor();
-            }
 
             match (self.gesture, hovered_circle) {
                 (Gesture::AddingNode, None) => {
@@ -236,6 +226,8 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 self.transform * translate * Affine::scale(1.0 + delta) * translate.inverse();
             ctx.request_paint();
         }
+
+        ctx.set_cursor(self.cursor_icon());
     }
 
     fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent) {
@@ -255,7 +247,6 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             // but instead afterwards, the first moment you move your mouse :/
             match key.state {
                 ElementState::Pressed => {
-                    ctx.set_cursor(&CursorIcon::Grab);
                     self.hotkey_state[hotkey] = true;
                 }
                 ElementState::Released => {
@@ -263,6 +254,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                     self.hotkey_state[hotkey] = false;
                 }
             }
+            ctx.set_cursor(self.cursor_icon());
         }
         ctx.request_paint();
     }
@@ -358,6 +350,17 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
     }
 }
 
+impl<G: Graph> GraphViewer<G> {
+    fn cursor_icon(&self) -> &CursorIcon {
+        match self.gesture {
+            Gesture::Inactive if self.hotkey_state[Hotkey::Space] => &CursorIcon::Grab,
+            Gesture::MovingNode { .. } => &CursorIcon::Grabbing,
+            Gesture::Panning => &CursorIcon::Grabbing,
+            _ => &CursorIcon::Default,
+        }
+    }
+}
+
 pub fn draw_arrow_between(
     scene: &mut Scene,
     color: &Color,
@@ -394,12 +397,15 @@ impl Default for Gesture {
 
 #[derive(Clone, Copy, Debug, Enum, Eq, PartialEq)]
 enum Hotkey {
+    Control,
     Space,
 }
 
 impl Hotkey {
     fn from_physical_key(physical_key: PhysicalKey) -> Option<Self> {
         match physical_key {
+            PhysicalKey::Code(KeyCode::ControlLeft) => Some(Self::Control),
+            PhysicalKey::Code(KeyCode::ControlRight) => Some(Self::Control),
             PhysicalKey::Code(KeyCode::Space) => Some(Self::Space),
             _ => None,
         }
