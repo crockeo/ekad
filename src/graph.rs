@@ -19,6 +19,7 @@ pub trait Graph {
     // TODO: make these some kind of iterator that won't need us to do heap allocation all the time
     fn neighbors(&self, index: NodeIndex) -> anyhow::Result<Vec<NodeIndex>>;
     fn node_indices(&self) -> anyhow::Result<Vec<NodeIndex>>;
+    fn remove_node(&mut self, index: NodeIndex) -> anyhow::Result<()>;
     fn set_node(&mut self, index: NodeIndex, node: Node) -> anyhow::Result<()>;
 }
 
@@ -55,6 +56,11 @@ impl Graph for PetgraphGraph {
             .node_indices()
             .map(PetgraphNodeIndex::index)
             .collect())
+    }
+
+    fn remove_node(&mut self, index: NodeIndex) -> anyhow::Result<()> {
+        self.0.remove_node(index.into());
+        Ok(())
     }
 
     fn set_node(&mut self, index: NodeIndex, node: Node) -> anyhow::Result<()> {
@@ -188,6 +194,16 @@ impl Graph for DatabaseGraph {
             indices.push(row.get("id")?);
         }
         Ok(indices)
+    }
+
+    fn remove_node(&mut self, index: NodeIndex) -> anyhow::Result<()> {
+        self.conn.execute(
+            r#"
+            DELETE FROM tasks WHERE id == ?
+            "#,
+            (index,),
+        )?;
+        Ok(())
     }
 
     fn set_node(&mut self, index: NodeIndex, node: Node) -> anyhow::Result<()> {

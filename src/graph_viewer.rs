@@ -107,6 +107,15 @@ impl<G: Graph> GraphViewer<G> {
         };
         Some(self.transform.inverse() * raw_mouse_position)
     }
+
+    fn cursor_icon(&self) -> &CursorIcon {
+        match self.gesture {
+            Gesture::Inactive if self.hotkey_state[Hotkey::Space] => &CursorIcon::Grab,
+            Gesture::MovingNode { .. } => &CursorIcon::Grabbing,
+            Gesture::Panning => &CursorIcon::Grabbing,
+            _ => &CursorIcon::Default,
+        }
+    }
 }
 
 impl<G: Graph + 'static> Widget for GraphViewer<G> {
@@ -159,12 +168,12 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 return;
             };
 
-            let space_pressed = self.hotkey_state[Hotkey::Space];
-            self.gesture = match (space_pressed, self.hovered_circle()) {
-                (false, None) => Gesture::AddingNode,
-                (false, Some(circle)) => Gesture::AddingEdge { from: circle },
-                (true, None) => Gesture::Panning,
-                (true, Some(circle)) => {
+            self.gesture = match self.hovered_circle() {
+                None if self.hotkey_state[Hotkey::Space] => Gesture::Panning,
+                None if self.hotkey_state[Hotkey::Control] => self.gesture,
+                None => Gesture::AddingNode,
+
+                Some(circle) if self.hotkey_state[Hotkey::Space] => {
                     let mouse_position = self
                         .mouse_position()
                         .expect("Must have mouse_position() if you also have hovered_circle()");
@@ -174,6 +183,8 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                             - mouse_position,
                     }
                 }
+                Some(circle) if self.hotkey_state[Hotkey::Control] => Gesture::Deleting,
+                Some(circle) => Gesture::AddingEdge { from: circle },
             };
             ctx.request_paint();
         }
@@ -205,6 +216,9 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 }
                 (Gesture::AddingEdge { from }, Some(to)) => {
                     self.graph.add_edge(from, to).unwrap();
+                }
+                (Gesture::Deleting, Some(node_id)) => {
+                    self.graph.remove_node(node_id).unwrap();
                 }
                 _ => {}
             }
@@ -238,6 +252,8 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
 
             if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
                 self.gesture = Gesture::Inactive;
+                ctx.request_paint();
+                return;
             }
 
             let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
@@ -280,7 +296,11 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 Some(mouse_position) => shapes::in_circle(&mouse_position, &node.circle),
             };
 
-            let circle_fill_color = if is_in_circle {
+            let circle_fill_color = if is_in_circle && self.gesture == Gesture::Deleting {
+                BASE_COLOR.with_alpha_factor(0.25)
+            } else if is_in_circle & self.hotkey_state[Hotkey::Control] {
+                BASE_COLOR.with_alpha_factor(0.5)
+            } else if is_in_circle {
                 LIGHT_COLOR
             } else {
                 BASE_COLOR
@@ -350,17 +370,6 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
     }
 }
 
-impl<G: Graph> GraphViewer<G> {
-    fn cursor_icon(&self) -> &CursorIcon {
-        match self.gesture {
-            Gesture::Inactive if self.hotkey_state[Hotkey::Space] => &CursorIcon::Grab,
-            Gesture::MovingNode { .. } => &CursorIcon::Grabbing,
-            Gesture::Panning => &CursorIcon::Grabbing,
-            _ => &CursorIcon::Default,
-        }
-    }
-}
-
 pub fn draw_arrow_between(
     scene: &mut Scene,
     color: &Color,
@@ -387,6 +396,7 @@ enum Gesture {
         node_id: NodeIndex,
         initial_distance: Vec2,
     },
+    Deleting,
 }
 
 impl Default for Gesture {
