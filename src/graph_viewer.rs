@@ -202,6 +202,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                     if let Some(mouse_position) = mouse_position {
                         self.graph
                             .add_node(Node {
+                                title: "".to_owned(),
                                 circle: Circle::new(mouse_position, CIRCLE_RADIUS),
                             })
                             .unwrap();
@@ -212,6 +213,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                         let to = self
                             .graph
                             .add_node(Node {
+                                title: "".to_owned(),
                                 circle: Circle::new(mouse_position, CIRCLE_RADIUS),
                             })
                             .unwrap();

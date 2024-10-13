@@ -5,8 +5,9 @@ use petgraph::graph::{DiGraph, NodeIndex as PetgraphNodeIndex};
 use rusqlite::Connection;
 use vello::kurbo::Circle;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Node {
+    pub title: String,
     pub circle: Circle,
 }
 
@@ -38,7 +39,7 @@ impl Graph for PetgraphGraph {
     }
 
     fn get_node(&self, index: NodeIndex) -> anyhow::Result<Node> {
-        let node: Node = self.0[PetgraphNodeIndex::from(index)];
+        let node: Node = self.0[PetgraphNodeIndex::from(index)].clone();
         Ok(node)
     }
 
@@ -165,9 +166,10 @@ impl Graph for DatabaseGraph {
     fn get_node(&self, index: NodeIndex) -> anyhow::Result<Node> {
         let mut stmt = self
             .conn
-            .prepare("SELECT x, y, radius FROM tasks WHERE id = ?")?;
+            .prepare("SELECT title, x, y, radius FROM tasks WHERE id = ?")?;
         let node: Node = stmt.query_row((index,), |row| {
             Ok(Node {
+                title: row.get("title")?,
                 circle: Circle::new(Point::new(row.get("x")?, row.get("y")?), row.get("radius")?),
             })
         })?;
