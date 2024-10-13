@@ -197,12 +197,22 @@ impl Graph for DatabaseGraph {
     }
 
     fn remove_node(&mut self, index: NodeIndex) -> anyhow::Result<()> {
-        self.conn.execute(
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            r#"
+            DELETE FROM task_links
+            WHERE parent_id = ?
+               OR child_id = ?
+            "#,
+            (index, index),
+        )?;
+        tx.execute(
             r#"
             DELETE FROM tasks WHERE id == ?
             "#,
             (index,),
         )?;
+        tx.commit()?;
         Ok(())
     }
 
