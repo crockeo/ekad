@@ -168,6 +168,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
         }
 
         if let PointerEvent::PointerDown(_, _) = event {
+            // TODO(editing): make this go back to Gesture::Inactive when clicking and currently in Gesture::Editing
             let Gesture::Inactive = self.gesture else {
                 return;
             };
@@ -220,6 +221,8 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                         self.graph.add_edge(from, to).unwrap();
                     }
                 }
+                // TODO(editing): set this up so that if you're "adding an edge" from a node back to itself
+                // you actually end up going into the editing mode for that node
                 (Gesture::AddingEdge { from }, Some(to)) => {
                     self.graph.add_edge(from, to).unwrap();
                 }
@@ -251,34 +254,37 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
     }
 
     fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent) {
-        if let TextEvent::KeyboardKey(key, _) = event {
-            if key.repeat {
-                return;
-            }
-
-            if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
-                self.gesture = Gesture::Inactive;
-                ctx.request_paint();
-                return;
-            }
-
-            let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
-                return;
-            };
-            // TODO: the cursor change doesn't take effect when you press space,
-            // but instead afterwards, the first moment you move your mouse :/
-            match key.state {
-                ElementState::Pressed => {
-                    self.hotkey_state[hotkey] = true;
-                }
-                ElementState::Released => {
-                    ctx.clear_cursor();
-                    self.hotkey_state[hotkey] = false;
-                }
-            }
-            ctx.set_cursor(self.cursor_icon());
+        let TextEvent::KeyboardKey(key, _) = event else {
+            return;
+        };
+        if key.repeat {
+            return;
         }
-        ctx.request_paint();
+
+        // TODO(editing): add something here when gesture is Editing
+        // to modify the text of the current node
+
+        if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
+            self.gesture = Gesture::Inactive;
+            ctx.request_paint();
+            return;
+        }
+
+        let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
+            return;
+        };
+        // TODO: the cursor change doesn't take effect when you press space,
+        // but instead afterwards, the first moment you move your mouse :/
+        match key.state {
+            ElementState::Pressed => {
+                self.hotkey_state[hotkey] = true;
+            }
+            ElementState::Released => {
+                ctx.clear_cursor();
+                self.hotkey_state[hotkey] = false;
+            }
+        }
+        ctx.set_cursor(self.cursor_icon());
     }
 
     fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent) {}
@@ -323,6 +329,9 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 let neighbor_node = &self.graph.get_node(neighbor_circle_id).unwrap();
                 draw_arrow_between(&mut scene, &BASE_COLOR, &node.circle, &neighbor_node.circle);
             }
+
+            // TODO(editing): add something here to paint the current text of the node
+            // in such a way that it always fits inside of the node
         }
 
         match (self.mouse_position(), self.gesture, self.hovered_circle()) {
@@ -403,6 +412,9 @@ enum Gesture {
         initial_distance: Vec2,
     },
     Deleting,
+    Editing {
+        node_id: NodeIndex,
+    },
 }
 
 impl Default for Gesture {
