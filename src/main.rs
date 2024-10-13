@@ -2,6 +2,7 @@
 mod graph;
 mod graph_viewer;
 mod shapes;
+mod text;
 
 use crate::graph_viewer::GraphViewer;
 use masonry::app_driver::AppDriver;

@@ -18,6 +18,7 @@ use winit::{
 
 use crate::graph::{Graph, Node, NodeIndex};
 use crate::shapes;
+use crate::text::Text;
 
 // NOTE: It would be interesting to use some concept of "centrality"
 // to be the guide for what to render vs. what not to render.
@@ -82,6 +83,7 @@ pub struct GraphViewer<G> {
     graph: G,
     hotkey_state: EnumMap<Hotkey, bool>,
     raw_mouse_position: Option<Point>,
+    text: Text,
     transform: Affine,
 }
 
@@ -329,6 +331,14 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 let neighbor_node = &self.graph.get_node(neighbor_circle_id).unwrap();
                 draw_arrow_between(&mut scene, &BASE_COLOR, &node.circle, &neighbor_node.circle);
             }
+
+            self.text.add(
+                &mut scene,
+                12.0,
+                None,
+                Affine::translate(node.circle.center.to_vec2()),
+                &node.title,
+            );
 
             // TODO(editing): add something here to paint the current text of the node
             // in such a way that it always fits inside of the node
