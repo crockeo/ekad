@@ -23,7 +23,7 @@ this is an attempt at making a graph-based task management software.
 I've often been frustrated by the way in which list- or tree-based
 task management software fails to capture complexity in real work.
 This means I have to keep more information in my head
-(`B` and `C` are subtasks of `A`, but `B` needs to be done before `C` can be started),
+(e.g. `B` and `C` are subtasks of `A`, but `B` needs to be done before `C` can be started),
 and doesn't let me use computers to solve cool problems like
 optimal resource allocation for planning.
 
@@ -45,11 +45,11 @@ and try to make it myself!
 
 ## How
 
-If you have `go` installed:
+If you have `rust` installed:
 
 ```shell
-# NOTE: I'll pin this to a version when I feel like I have something releaseable.
-go install github.com/crockeo/ekad@latest
+https://github.com/crockeo/ekad
+cargo run
 ```
 
 # License
