@@ -229,7 +229,7 @@ impl Graph for DatabaseGraph {
                 radius
             ) VALUES (
                 ?,
-                '',
+                ?,
                 ?,
                 ?,
                 ?
@@ -237,6 +237,7 @@ impl Graph for DatabaseGraph {
             "#,
             (
                 index,
+                node.title,
                 node.circle.center.x,
                 node.circle.center.y,
                 node.circle.radius,
