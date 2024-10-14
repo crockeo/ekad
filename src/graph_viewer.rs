@@ -16,9 +16,12 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
-use crate::graph::{Graph, Node, NodeIndex};
 use crate::shapes;
-use crate::text::Text;
+use crate::text::{TextConfig, TextConfigBuilder, TextRenderer};
+use crate::{
+    graph::{Graph, Node, NodeIndex},
+    text::HorizontalAlignment,
+};
 
 // NOTE: It would be interesting to use some concept of "centrality"
 // to be the guide for what to render vs. what not to render.
@@ -77,14 +80,30 @@ lazy_static! {
     static ref LINE_STROKE: Stroke = Stroke::new(4.0);
 }
 
-#[derive(Default)]
 pub struct GraphViewer<G> {
     gesture: Gesture,
     graph: G,
     hotkey_state: EnumMap<Hotkey, bool>,
     raw_mouse_position: Option<Point>,
-    text: Text,
+    text_config: TextConfig,
+    text_renderer: TextRenderer,
     transform: Affine,
+}
+
+impl<G: Default + Graph> Default for GraphViewer<G> {
+    fn default() -> Self {
+        Self {
+            gesture: Default::default(),
+            graph: Default::default(),
+            hotkey_state: Default::default(),
+            raw_mouse_position: Default::default(),
+            text_config: TextConfigBuilder::default()
+                .set_horizontal_alignment(HorizontalAlignment::Middle)
+                .build(),
+            text_renderer: Default::default(),
+            transform: Default::default(),
+        }
+    }
 }
 
 impl<G: Graph> GraphViewer<G> {
@@ -332,16 +351,14 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 draw_arrow_between(&mut scene, &BASE_COLOR, &node.circle, &neighbor_node.circle);
             }
 
-            self.text.add(
+            // TODO(editing): add something here to paint the current text of the node
+            // in such a way that it always fits inside of the node
+            self.text_renderer.render_with_transform(
                 &mut scene,
-                12.0,
-                None,
+                &self.text_config,
                 Affine::translate(node.circle.center.to_vec2()),
                 &node.title,
             );
-
-            // TODO(editing): add something here to paint the current text of the node
-            // in such a way that it always fits inside of the node
         }
 
         match (self.mouse_position(), self.gesture, self.hovered_circle()) {
