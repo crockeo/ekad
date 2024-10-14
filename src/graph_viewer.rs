@@ -189,10 +189,10 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
         }
 
         if let PointerEvent::PointerDown(_, _) = event {
-            // TODO(editing): make this go back to Gesture::Inactive when clicking and currently in Gesture::Editing
-            let Gesture::Inactive = self.gesture else {
-                return;
-            };
+            match self.gesture {
+                Gesture::Inactive | Gesture::Editing { .. } => {}
+                _ => return,
+            }
 
             self.gesture = match self.hovered_circle() {
                 None if self.hotkey_state[Hotkey::Space] => Gesture::Panning,
@@ -219,7 +219,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             let hovered_circle = self.hovered_circle();
             let mouse_position = self.mouse_position();
 
-            match (self.gesture, hovered_circle) {
+            self.gesture = match (self.gesture, hovered_circle) {
                 (Gesture::AddingNode, None) => {
                     if let Some(mouse_position) = mouse_position {
                         self.graph
@@ -229,6 +229,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                             })
                             .unwrap();
                     }
+                    Gesture::Inactive
                 }
                 (Gesture::AddingEdge { from }, None) => {
                     if let Some(mouse_position) = mouse_position {
@@ -241,18 +242,21 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                             .unwrap();
                         self.graph.add_edge(from, to).unwrap();
                     }
+                    Gesture::Inactive
                 }
-                // TODO(editing): set this up so that if you're "adding an edge" from a node back to itself
-                // you actually end up going into the editing mode for that node
+                (Gesture::AddingEdge { from }, Some(to)) if from == to => {
+                    Gesture::Editing { node_id: to }
+                }
                 (Gesture::AddingEdge { from }, Some(to)) => {
                     self.graph.add_edge(from, to).unwrap();
+                    Gesture::Inactive
                 }
                 (Gesture::Deleting, Some(node_id)) => {
                     self.graph.remove_node(node_id).unwrap();
+                    Gesture::Inactive
                 }
-                _ => {}
-            }
-            self.gesture = Gesture::Inactive;
+                _ => Gesture::Inactive,
+            };
             ctx.request_paint();
         }
 
@@ -339,20 +343,40 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 BASE_COLOR
             };
 
-            scene.fill(
-                vello::peniko::Fill::NonZero,
-                Affine::IDENTITY,
-                circle_fill_color,
-                None,
-                &node.circle,
-            );
+            match self.gesture {
+                Gesture::Editing { node_id } if node_id == circle_id => {
+                    scene.fill(
+                        vello::peniko::Fill::NonZero,
+                        Affine::IDENTITY,
+                        LIGHT_COLOR,
+                        None,
+                        &Circle::new(node.circle.center, node.circle.radius),
+                    );
+                    scene.fill(
+                        vello::peniko::Fill::NonZero,
+                        Affine::IDENTITY,
+                        circle_fill_color,
+                        None,
+                        &Circle::new(node.circle.center, node.circle.radius - 2.0),
+                    );
+                }
+                _ => {
+                    scene.fill(
+                        vello::peniko::Fill::NonZero,
+                        Affine::IDENTITY,
+                        circle_fill_color,
+                        None,
+                        &node.circle,
+                    );
+                }
+            }
+
             for neighbor_circle_id in self.graph.neighbors(circle_id).unwrap() {
                 let neighbor_node = &self.graph.get_node(neighbor_circle_id).unwrap();
                 draw_arrow_between(&mut scene, &BASE_COLOR, &node.circle, &neighbor_node.circle);
             }
 
-            // TODO(editing): add something here to paint the current text of the node
-            // in such a way that it always fits inside of the node
+            // TODO(editing): make this scale text so that it always fits inside of a node
             self.text_renderer.render_with_transform(
                 &mut scene,
                 &self.text_config,

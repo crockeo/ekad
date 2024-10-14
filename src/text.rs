@@ -102,6 +102,7 @@ impl TextRenderer {
             0,
             text_config.horizontal_alignment,
         );
+        // TODO(editing): make this vertically center the text
         let mut pen_y = line_height / 4.0f32;
         scene
             .draw_glyphs(&self.font)
