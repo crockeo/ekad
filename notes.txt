@@ -1,0 +1,35 @@
+Things I'm longing for while using Ekad:
+
+- Make it so nodes are selected when you first create them.
+  I find myself making a node and wanting to type,
+  but then I have to make another node instead.
+
+- Make it so you can select a whole group of nodes at once
+  so you can move them around and bring them someplace else.
+
+- Make it so you can make a "group of nodes" and then connect a node to it.
+  Sort of like a node which is a graph itself.
+
+- Better text editing.
+  - Be able to go back and forth with a cursor (incl. between lines).
+  - Be be able to select stuff...
+  - Pretty much just "copy the experience of a text box"
+
+- Make it so you can delete edges.
+
+
+
+----
+
+Some earlier things I had written down:
+
+- Define metadata around nodes to capture some basic information
+  - Name, notes, scheduled time, etc.
+- Add a UI around the graph viewer
+  - Turn this into a Masonry widget
+  - See if we can build an application around it in Masonry
+  - Eventually: see if it can be integrated into Xilem?
+- If we run into performance issues:
+  - Make some way to like """cache""" scene elements,
+    so we don't have to re-calculate a bunch of stuff around
+    circles and lines and stuff like that.

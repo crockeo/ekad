@@ -13,7 +13,7 @@ use vello::{
 };
 use winit::{
     event::{ElementState, KeyEvent},
-    keyboard::{Key, KeyCode, PhysicalKey},
+    keyboard::{KeyCode, PhysicalKey},
 };
 
 use crate::shapes;
@@ -22,38 +22,6 @@ use crate::{
     graph::{Graph, Node, NodeIndex},
     text::HorizontalAlignment,
 };
-
-// NOTE: It would be interesting to use some concept of "centrality"
-// to be the guide for what to render vs. what not to render.
-// Use that in combination with a quad tree / culling to:
-//
-// - render only things that are highly important when zoomed out
-// - draw edges between them and other things in the graph as simulated paths that exist
-// - as you zoom in, bring more and more less-important nodes in, and then get more detail
-// - but by zooming in keep the total number of nodes you're rendering below some max amount
-//   by using a quad tree / culling approach to rendering
-
-// TODO: do a pass to see if i can clean up more of the code in here
-// before i add more complexity around the rest of the program
-
-// TODO: and what kinds of stuff are an Eventually(tm) (aka: BIG!)
-// - Hook it up to storage
-//   - Preferably something like automerge.rs so it can be synchronized
-//   - Otherwise try to make it compatible with the CLI version of ekad?
-// - Define metadata around nodes to capture some basic information
-//   - Name, notes, scheduled time, etc.
-// - Add a UI around the graph viewer
-//   - Turn this into a Masonry widget
-//   - See if we can build an application around it in Masonry
-//   - Eventually: see if it can be integrated into Xilem?
-// - If we run into performance issues:
-//   - Make some way to like """cache""" scene elements,
-//     so we don't have to re-calculate a bunch of stuff around
-//     circles and lines and stuff like that.
-
-// TODO: set it up so that you can delete edges, not just nodes
-// this is for sure going to need some underlying changes
-// because i'm going to need to determine what """selecting""" and edge means
 
 const CIRCLE_RADIUS: f64 = 40.0;
 
