@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use masonry::text::Selectable;
 use masonry::vello::kurbo::Affine;
 use masonry::vello::peniko::{Blob, Brush, Color, Font};
 use masonry::vello::{glyph::Glyph, Scene};
@@ -102,8 +101,11 @@ impl TextRenderer {
             0,
             text_config.horizontal_alignment,
         );
-        // TODO(editing): make this vertically center the text
-        let mut pen_y = line_height / 4.0f32;
+
+        let lines = chars.iter().filter(|char| **char == '\n').count();
+        let total_line_height = line_height * lines as f32;
+        let mut pen_y = -total_line_height / 2.0f32 + line_height / 8.0f32;
+
         scene
             .draw_glyphs(&self.font)
             .font_size(text_config.font_size)
@@ -157,7 +159,7 @@ fn initial_pen_x(
 fn next_line(chars: &[char], start: usize) -> &[char] {
     for (i, char) in chars.into_iter().skip(start).enumerate() {
         if *char == '\n' {
-            return &chars[start..i];
+            return &chars[start..i + start];
         }
     }
     &chars[start..]
@@ -192,6 +194,15 @@ mod tests {
         let chars = &[];
         let line = next_line(chars, 0);
         assert_eq!(line, chars);
+    }
+
+    #[test]
+    fn test_next_line__just_newlines() {
+        let chars = &['\n', '\n'];
+        let line1 = next_line(chars, 0);
+        let line2 = next_line(chars, line1.len() + 1);
+        assert_eq!(line1, &[]);
+        assert_eq!(line2, &[]);
     }
 
     #[test]

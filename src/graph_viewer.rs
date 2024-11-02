@@ -12,8 +12,8 @@ use vello::{
     peniko::Color,
 };
 use winit::{
-    event::ElementState,
-    keyboard::{KeyCode, PhysicalKey},
+    event::{ElementState, KeyEvent},
+    keyboard::{Key, KeyCode, PhysicalKey},
 };
 
 use crate::shapes;
@@ -282,12 +282,20 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
         let TextEvent::KeyboardKey(key, _) = event else {
             return;
         };
+
+        if let Gesture::Editing { node_id } = self.gesture {
+            let mut node = self.graph.get_node(node_id).unwrap();
+            if let Some(new_title) = update_title(&node.title, key) {
+                node.title = new_title;
+                self.graph.set_node(node_id, node).unwrap();
+                ctx.request_paint();
+            }
+            ctx.request_paint();
+        }
+
         if key.repeat {
             return;
         }
-
-        // TODO(editing): add something here when gesture is Editing
-        // to modify the text of the current node
 
         if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
             self.gesture = Gesture::Inactive;
@@ -345,6 +353,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
 
             match self.gesture {
                 Gesture::Editing { node_id } if node_id == circle_id => {
+                    // TODO(editing): show a cursor here too
                     scene.fill(
                         vello::peniko::Fill::NonZero,
                         Affine::IDENTITY,
@@ -488,5 +497,21 @@ impl Hotkey {
             PhysicalKey::Code(KeyCode::Space) => Some(Self::Space),
             _ => None,
         }
+    }
+}
+
+fn update_title(title: &str, key: &KeyEvent) -> Option<String> {
+    let Some(key_text) = &key.text else {
+        return None;
+    };
+
+    if key_text == "\r" {
+        Some(title.to_string() + "\n")
+    } else if key_text == "\u{8}" && title.len() > 0 {
+        Some(title[0..title.len() - 1].to_string())
+    } else if key_text == "\u{8}" {
+        None
+    } else {
+        Some(title.to_string() + key_text)
     }
 }
