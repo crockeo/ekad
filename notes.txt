@@ -15,6 +15,10 @@ Things I'm longing for while using Ekad:
   - Be be able to select stuff...
   - Pretty much just "copy the experience of a text box"
   - Automatically wrap text so I don't have to think about it
+  - Make scaling look better
+    - Don't track the bounding rectangle, intead use the bounding circle.
+    - Track the point which is furthest from the center.
+    - Use `radius / length of that vector (from center)` to calculate the scaling factor.
 
 - Make it so you can delete edges.
 
