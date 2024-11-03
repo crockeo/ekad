@@ -73,10 +73,6 @@ impl Default for TextRenderer {
 }
 
 impl TextRenderer {
-    pub fn render(&self, scene: &mut Scene, text_config: &TextConfig, text: &str) {
-        self.render_with_transform(scene, text_config, Affine::IDENTITY, text)
-    }
-
     pub fn render_box(&self, text_config: &TextConfig, text: &str) -> (f32, f32) {
         let font_ref = to_font_ref(&self.font).unwrap();
         let font_size = vello::skrifa::instance::Size::new(text_config.font_size);
@@ -120,6 +116,7 @@ impl TextRenderer {
         text_config: &TextConfig,
         transform: Affine,
         text: &str,
+        is_editing: bool,
     ) {
         let font_ref = to_font_ref(&self.font).unwrap();
         let font_size = vello::skrifa::instance::Size::new(text_config.font_size);
@@ -173,6 +170,23 @@ impl TextRenderer {
                     })
                 }),
             );
+
+        if is_editing {
+            scene
+                .draw_glyphs(&self.font)
+                .font_size(text_config.font_size)
+                .transform(transform)
+                .brush(&text_config.brush)
+                .draw(
+                    vello::peniko::Fill::NonZero,
+                    [Glyph {
+                        id: font_ref.charmap().map('|').unwrap_or_default().to_u32(),
+                        x: pen_x,
+                        y: pen_y,
+                    }]
+                    .into_iter(),
+                );
+        }
     }
 }
 

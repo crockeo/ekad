@@ -319,9 +319,10 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 BASE_COLOR
             };
 
+            let mut is_editing = false;
             match self.gesture {
                 Gesture::Editing { node_id } if node_id == circle_id => {
-                    // TODO(editing): show a cursor here too
+                    is_editing = true;
                     scene.fill(
                         vello::peniko::Fill::NonZero,
                         Affine::IDENTITY,
@@ -371,6 +372,7 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 &self.text_config,
                 transform,
                 &node.title,
+                is_editing,
             );
         }
 
