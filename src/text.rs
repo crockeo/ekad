@@ -77,6 +77,43 @@ impl TextRenderer {
         self.render_with_transform(scene, text_config, Affine::IDENTITY, text)
     }
 
+    pub fn render_box(&self, text_config: &TextConfig, text: &str) -> (f32, f32) {
+        let font_ref = to_font_ref(&self.font).unwrap();
+        let font_size = vello::skrifa::instance::Size::new(text_config.font_size);
+        let axes = font_ref.axes();
+        let variations: &[(&str, f32)] = &[];
+        let var_loc = axes.location(variations);
+        let metrics = font_ref.metrics(font_size, &var_loc);
+        let line_height = metrics.ascent - metrics.descent + metrics.leading;
+        let glyph_metrics = font_ref.glyph_metrics(font_size, &var_loc);
+
+        let mut current_line_width = 0.0f32;
+        let mut max_width = 0.0f32;
+        let mut line_count = 1;
+
+        for ch in text.chars() {
+            if ch == '\n' {
+                // Update max width if current line is wider
+                max_width = max_width.max(current_line_width);
+                // Reset current line width
+                current_line_width = 0.0;
+                // Increment line count
+                line_count += 1;
+                continue;
+            }
+
+            // Get glyph metrics for the current character
+            let gid = font_ref.charmap().map(ch).unwrap_or_default();
+            let advance = glyph_metrics.advance_width(gid).unwrap_or_default();
+            current_line_width += advance;
+        }
+        max_width = max_width.max(current_line_width);
+
+        let width = max_width;
+        let height = line_height * line_count as f32;
+        (width, height)
+    }
+
     pub fn render_with_transform(
         &self,
         scene: &mut Scene,

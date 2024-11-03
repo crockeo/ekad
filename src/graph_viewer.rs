@@ -353,11 +353,23 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 draw_arrow_between(&mut scene, &BASE_COLOR, &node.circle, &neighbor_node.circle);
             }
 
-            // TODO(editing): make this scale text so that it always fits inside of a node
+            let (text_width, text_height) = self
+                .text_renderer
+                .render_box(&self.text_config, &node.title);
+            let text_max_size = text_width.max(text_height) as f64;
+
+            let bounding_square_size = shapes::circle_bounding_square_size(node.circle.radius);
+
+            let mut transform = Affine::IDENTITY;
+            if text_max_size > bounding_square_size {
+                transform = transform.then_scale(bounding_square_size / text_max_size);
+            }
+            transform = transform.then_translate(node.circle.center.to_vec2());
+
             self.text_renderer.render_with_transform(
                 &mut scene,
                 &self.text_config,
-                Affine::translate(node.circle.center.to_vec2()),
+                transform,
                 &node.title,
             );
         }
