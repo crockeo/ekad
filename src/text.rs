@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use masonry::vello::kurbo::Affine;
-use masonry::vello::peniko::{Blob, Brush, Color, Font};
-use masonry::vello::{glyph::Glyph, Scene};
-use vello::skrifa::{metrics::GlyphMetrics, raw::FontRef, MetadataProvider};
+use vello::kurbo::Affine;
+use vello::peniko::{Blob, Brush, Color, Fill, FontData};
+use skrifa::{metrics::GlyphMetrics, raw::FontRef, MetadataProvider};
+use vello::{DrawGlyphs, Glyph, Scene};
 
 const LAILA_FONT: &[u8] = include_bytes!("../res/Laila-Regular.ttf");
 
@@ -61,13 +61,13 @@ pub enum HorizontalAlignment {
 }
 
 pub struct TextRenderer {
-    font: Font,
+    font: FontData,
 }
 
 impl Default for TextRenderer {
     fn default() -> Self {
         Self {
-            font: Font::new(Blob::new(Arc::new(LAILA_FONT)), 0),
+            font: FontData::new(Blob::new(Arc::new(LAILA_FONT)), 0),
         }
     }
 }
@@ -75,7 +75,7 @@ impl Default for TextRenderer {
 impl TextRenderer {
     pub fn render_box(&self, text_config: &TextConfig, text: &str) -> (f32, f32) {
         let font_ref = to_font_ref(&self.font).unwrap();
-        let font_size = vello::skrifa::instance::Size::new(text_config.font_size);
+        let font_size = skrifa::instance::Size::new(text_config.font_size);
         let axes = font_ref.axes();
         let variations: &[(&str, f32)] = &[];
         let var_loc = axes.location(variations);
@@ -119,7 +119,7 @@ impl TextRenderer {
         is_editing: bool,
     ) {
         let font_ref = to_font_ref(&self.font).unwrap();
-        let font_size = vello::skrifa::instance::Size::new(text_config.font_size);
+        let font_size = skrifa::instance::Size::new(text_config.font_size);
         let axes = font_ref.axes();
         let variations: &[(&str, f32)] = &[];
         let var_loc = axes.location(variations);
@@ -140,13 +140,12 @@ impl TextRenderer {
         let total_line_height = line_height * lines as f32;
         let mut pen_y = -total_line_height / 2.0f32 + line_height / 8.0f32;
 
-        scene
-            .draw_glyphs(&self.font)
+        DrawGlyphs::new(scene, &self.font)
             .font_size(text_config.font_size)
             .transform(transform)
             .brush(&text_config.brush)
             .draw(
-                vello::peniko::Fill::NonZero,
+                Fill::NonZero,
                 text.chars().enumerate().filter_map(|(i, ch)| {
                     if ch == '\n' {
                         pen_y += line_height;
@@ -172,13 +171,12 @@ impl TextRenderer {
             );
 
         if is_editing {
-            scene
-                .draw_glyphs(&self.font)
+            DrawGlyphs::new(scene, &self.font)
                 .font_size(text_config.font_size)
                 .transform(transform)
                 .brush(&text_config.brush)
                 .draw(
-                    vello::peniko::Fill::NonZero,
+                    Fill::NonZero,
                     [Glyph {
                         id: font_ref.charmap().map('|').unwrap_or_default().to_u32(),
                         x: pen_x,
@@ -227,8 +225,8 @@ fn line_width(font_ref: &FontRef, glyph_metrics: &GlyphMetrics, chars: &[char]) 
     width
 }
 
-fn to_font_ref(font: &Font) -> Option<FontRef<'_>> {
-    use vello::skrifa::raw::FileRef;
+fn to_font_ref(font: &FontData) -> Option<FontRef<'_>> {
+    use skrifa::raw::FileRef;
     let file_ref = FileRef::new(font.data.as_ref()).ok()?;
     match file_ref {
         FileRef::Font(font) => Some(font),

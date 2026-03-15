@@ -1,20 +1,16 @@
-use accesskit::Role;
 use enum_map::{Enum, EnumMap};
 use lazy_static::lazy_static;
-use masonry::{
-    vello::Scene, AccessCtx, AccessEvent, BoxConstraints, CursorIcon, EventCtx, LayoutCtx,
-    LifeCycle, LifeCycleCtx, PaintCtx, PointerEvent, Size, StatusChange, TextEvent, Vec2, Widget,
-    WidgetId,
+use masonry::accesskit::Role;
+use masonry::core::{
+    keyboard::{Code, Key, KeyState, NamedKey},
+    AccessCtx, AccessEvent, BoxConstraints, CursorIcon, EventCtx, KeyboardEvent, LayoutCtx,
+    NoAction, PaintCtx, PointerEvent, PropertiesMut, PropertiesRef, QueryCtx, RegisterCtx,
+    ScrollDelta, TextEvent, Widget, WidgetId,
 };
+use masonry::kurbo::{Affine, Circle, Point, Size, Stroke, Vec2};
+use masonry::peniko::Color;
+use masonry::vello::Scene;
 use smallvec::SmallVec;
-use vello::{
-    kurbo::{Affine, Circle, Point, Stroke},
-    peniko::Color,
-};
-use winit::{
-    event::{ElementState, KeyEvent},
-    keyboard::{KeyCode, PhysicalKey},
-};
 
 use crate::shapes;
 use crate::text::{TextConfig, TextConfigBuilder, TextRenderer};
@@ -25,24 +21,9 @@ use crate::{
 
 const CIRCLE_RADIUS: f64 = 40.0;
 
-const BASE_COLOR: Color = Color {
-    r: 113,
-    g: 64,
-    b: 237,
-    a: 255,
-};
-const LIGHT_COLOR: Color = Color {
-    r: 158,
-    g: 133,
-    b: 222,
-    a: 255,
-};
-const PREVIEW_COLOR: Color = Color {
-    r: 113,
-    g: 64,
-    b: 237,
-    a: 127,
-};
+const BASE_COLOR: Color = Color::from_rgba8(113, 64, 237, 255);
+const LIGHT_COLOR: Color = Color::from_rgba8(158, 133, 222, 255);
+const PREVIEW_COLOR: Color = Color::from_rgba8(113, 64, 237, 127);
 
 lazy_static! {
     static ref LINE_STROKE: Stroke = Stroke::new(4.0);
@@ -100,20 +81,18 @@ impl<G: Graph> GraphViewer<G> {
         };
         Some(self.transform.inverse() * raw_mouse_position)
     }
-
-    fn cursor_icon(&self) -> &CursorIcon {
-        match self.gesture {
-            Gesture::Inactive if self.hotkey_state[Hotkey::Space] => &CursorIcon::Grab,
-            Gesture::MovingNode { .. } => &CursorIcon::Grabbing,
-            Gesture::Panning => &CursorIcon::Grabbing,
-            _ => &CursorIcon::Default,
-        }
-    }
 }
 
 impl<G: Graph + 'static> Widget for GraphViewer<G> {
-    fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent) {
-        if !ctx.has_focus() {
+    type Action = NoAction;
+
+    fn on_pointer_event(
+        &mut self,
+        ctx: &mut EventCtx<'_>,
+        _props: &mut PropertiesMut<'_>,
+        event: &PointerEvent,
+    ) {
+        if !ctx.has_focus_target() {
             // TODO: how should this actually work?
             // i want to be able to receive hotkeys anytime i'm interacting with the graph
             // how should i be able to receive text events?
@@ -125,8 +104,11 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             ctx.request_focus()
         }
 
-        if let PointerEvent::PointerMove(pointer_state) = event {
-            let new_position = Point::new(pointer_state.position.x, pointer_state.position.y);
+        if let PointerEvent::Move(pointer_update) = event {
+            let new_position = Point::new(
+                pointer_update.current.position.x / 2.0,
+                pointer_update.current.position.y / 2.0,
+            );
 
             if let (Gesture::Panning, Some(raw_mouse_position)) =
                 (self.gesture, self.raw_mouse_position)
@@ -153,10 +135,10 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             // - when you start/stop hovering over a circle
             // - when you're in the middle of a gesture
             // - ???
-            ctx.request_paint();
+            ctx.request_paint_only();
         }
 
-        if let PointerEvent::PointerDown(_, _) = event {
+        if let PointerEvent::Down(_) = event {
             match self.gesture {
                 Gesture::Inactive | Gesture::Editing { .. } => {}
                 _ => return,
@@ -180,10 +162,10 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 Some(circle) if self.hotkey_state[Hotkey::Control] => Gesture::Deleting,
                 Some(circle) => Gesture::AddingEdge { from: circle },
             };
-            ctx.request_paint();
+            ctx.request_paint_only();
         }
 
-        if let PointerEvent::PointerUp(_, _) = event {
+        if let PointerEvent::Up(_) = event {
             let hovered_circle = self.hovered_circle();
             let mouse_position = self.mouse_position();
 
@@ -225,29 +207,46 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
                 }
                 _ => Gesture::Inactive,
             };
-            ctx.request_paint();
+            ctx.request_paint_only();
         }
 
-        if let PointerEvent::MouseWheel(delta, _) = event {
-            self.transform = self.transform.then_translate(Vec2::new(delta.x, delta.y));
-            ctx.request_paint();
+        if let PointerEvent::Scroll(scroll_event) = event {
+            let delta = match scroll_event.delta {
+                ScrollDelta::LineDelta(x, y) => Vec2::new(x as f64 * 20.0, y as f64 * 20.0),
+                ScrollDelta::PixelDelta(pos) => Vec2::new(pos.x, pos.y),
+                ScrollDelta::PageDelta(x, y) => Vec2::new(x as f64 * 100.0, y as f64 * 100.0),
+            };
+            self.transform = self.transform.then_translate(delta);
+            ctx.request_paint_only();
         }
 
-        if let PointerEvent::Pinch(delta, _) = event {
+        if let PointerEvent::Gesture(gesture_event) = event {
+            let masonry::core::PointerGesture::Pinch(delta) = &gesture_event.gesture else {
+                return;
+            };
+            let delta = *delta as f64;
+
             let Some(mouse_position) = self.mouse_position() else {
                 return;
             };
+
             let translate = Affine::translate(mouse_position.to_vec2());
             self.transform =
                 self.transform * translate * Affine::scale(1.0 + delta) * translate.inverse();
-            ctx.request_paint();
+
+            ctx.request_paint_only();
         }
 
-        ctx.set_cursor(self.cursor_icon());
+        ctx.request_cursor_icon_change();
     }
 
-    fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent) {
-        let TextEvent::KeyboardKey(key, _) = event else {
+    fn on_text_event(
+        &mut self,
+        ctx: &mut EventCtx<'_>,
+        _props: &mut PropertiesMut<'_>,
+        event: &TextEvent,
+    ) {
+        let TextEvent::Keyboard(key) = event else {
             return;
         };
 
@@ -256,49 +255,61 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             if let Some(new_title) = update_title(&node.title, key) {
                 node.title = new_title;
                 self.graph.set_node(node_id, node).unwrap();
-                ctx.request_paint();
+                ctx.request_paint_only();
             }
-            ctx.request_paint();
+            ctx.request_paint_only();
         }
 
         if key.repeat {
             return;
         }
 
-        if key.physical_key == PhysicalKey::Code(KeyCode::Escape) {
+        if key.code == Code::Escape {
             self.gesture = Gesture::Inactive;
-            ctx.request_paint();
+            ctx.request_paint_only();
             return;
         }
 
-        let Some(hotkey) = Hotkey::from_physical_key(key.physical_key) else {
+        let Some(hotkey) = Hotkey::from_code(key.code) else {
             return;
         };
-        // TODO: the cursor change doesn't take effect when you press space,
-        // but instead afterwards, the first moment you move your mouse :/
         match key.state {
-            ElementState::Pressed => {
+            KeyState::Down => {
                 self.hotkey_state[hotkey] = true;
             }
-            ElementState::Released => {
-                ctx.clear_cursor();
+            KeyState::Up => {
+                ctx.request_cursor_icon_change();
                 self.hotkey_state[hotkey] = false;
             }
         }
-        ctx.set_cursor(self.cursor_icon());
+        ctx.request_cursor_icon_change();
     }
 
-    fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent) {}
+    fn on_access_event(
+        &mut self,
+        _ctx: &mut EventCtx<'_>,
+        _props: &mut PropertiesMut<'_>,
+        _event: &AccessEvent,
+    ) {
+    }
 
-    fn on_status_change(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange) {}
+    fn register_children(&mut self, _ctx: &mut RegisterCtx<'_>) {}
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle) {}
-
-    fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
+    fn layout(
+        &mut self,
+        _ctx: &mut LayoutCtx<'_>,
+        _props: &mut PropertiesMut<'_>,
+        bc: &BoxConstraints,
+    ) -> Size {
         bc.max()
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx<'_>, parent_scene: &mut Scene) {
+    fn paint(
+        &mut self,
+        _ctx: &mut PaintCtx<'_>,
+        _props: &PropertiesRef<'_>,
+        parent_scene: &mut Scene,
+    ) {
         let mut scene = Scene::new();
 
         for circle_id in self.graph.node_indices().unwrap() {
@@ -310,9 +321,9 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
             };
 
             let circle_fill_color = if is_in_circle && self.gesture == Gesture::Deleting {
-                BASE_COLOR.with_alpha_factor(0.25)
+                BASE_COLOR.with_alpha(0.25)
             } else if is_in_circle & self.hotkey_state[Hotkey::Control] {
-                BASE_COLOR.with_alpha_factor(0.5)
+                BASE_COLOR.with_alpha(0.5)
             } else if is_in_circle {
                 LIGHT_COLOR
             } else {
@@ -420,10 +431,25 @@ impl<G: Graph + 'static> Widget for GraphViewer<G> {
         Role::Unknown
     }
 
-    fn accessibility(&mut self, ctx: &mut AccessCtx<'_>) {}
+    fn accessibility(
+        &mut self,
+        _: &mut AccessCtx<'_>,
+        _: &PropertiesRef<'_>,
+        _: &mut masonry::accesskit::Node,
+    ) {
+    }
 
     fn children_ids(&self) -> SmallVec<[WidgetId; 16]> {
         SmallVec::default()
+    }
+
+    fn get_cursor(&self, _ctx: &QueryCtx<'_>, _pos: Point) -> CursorIcon {
+        match self.gesture {
+            Gesture::Inactive if self.hotkey_state[Hotkey::Space] => CursorIcon::Grab,
+            Gesture::MovingNode { .. } => CursorIcon::Grabbing,
+            Gesture::Panning => CursorIcon::Grabbing,
+            _ => CursorIcon::Default,
+        }
     }
 }
 
@@ -472,28 +498,28 @@ enum Hotkey {
 }
 
 impl Hotkey {
-    fn from_physical_key(physical_key: PhysicalKey) -> Option<Self> {
-        match physical_key {
-            PhysicalKey::Code(KeyCode::ControlLeft) => Some(Self::Control),
-            PhysicalKey::Code(KeyCode::ControlRight) => Some(Self::Control),
-            PhysicalKey::Code(KeyCode::Space) => Some(Self::Space),
+    fn from_code(code: Code) -> Option<Self> {
+        match code {
+            Code::ControlLeft => Some(Self::Control),
+            Code::ControlRight => Some(Self::Control),
+            Code::Space => Some(Self::Space),
             _ => None,
         }
     }
 }
 
-fn update_title(title: &str, key: &KeyEvent) -> Option<String> {
-    let Some(key_text) = &key.text else {
+fn update_title(title: &str, key: &KeyboardEvent) -> Option<String> {
+    // Only process key down events
+    if key.state != KeyState::Down {
         return None;
-    };
+    }
 
-    if key_text == "\r" {
-        Some(title.to_string() + "\n")
-    } else if key_text == "\u{8}" && title.len() > 0 {
-        Some(title[0..title.len() - 1].to_string())
-    } else if key_text == "\u{8}" {
-        None
-    } else {
-        Some(title.to_string() + key_text)
+    match &key.key {
+        Key::Character(text) => Some(title.to_string() + text.as_str()),
+        Key::Named(NamedKey::Enter) => Some(title.to_string() + "\n"),
+        Key::Named(NamedKey::Backspace) if !title.is_empty() => {
+            Some(title[0..title.len() - 1].to_string())
+        }
+        _ => None,
     }
 }

@@ -1,9 +1,8 @@
 use std::path::Path;
 
-use masonry::Point;
+use masonry::kurbo::{Circle, Point};
 use petgraph::graph::{DiGraph, NodeIndex as PetgraphNodeIndex};
 use rusqlite::Connection;
-use vello::kurbo::Circle;
 
 #[derive(Clone, PartialEq)]
 pub struct Node {

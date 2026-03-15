@@ -1,6 +1,5 @@
-use masonry::Affine;
+use masonry::kurbo::{Affine, Circle, Line, Point};
 use std::f64::consts::PI;
-use vello::kurbo::{Circle, Line, Point};
 
 const ARROW_ARM_LENGTH: f64 = 20.0;
 const ARROW_ARM_ANGLE: f64 = 0.2 * PI;
