@@ -1,56 +1,53 @@
-#![allow(unused_variables)]
 mod graph;
 mod graph_viewer;
 mod shapes;
 mod text;
 
-use crate::graph_viewer::GraphViewer;
-use masonry::core::{ErasedAction, NewWidget, WidgetId};
-use masonry::dpi::LogicalSize;
-use masonry::theme::default_property_set;
-use masonry_winit::app::{AppDriver, DriverCtx, NewWindow, WindowId};
-use masonry_winit::winit::window::Window;
+use crate::graph_viewer::graph_viewer;
+use winit::error::EventLoopError;
+use xilem::{
+    style::Style,
+    view::{flex, label, Axis, FlexExt},
+    Color, EventLoop, WidgetView, WindowOptions, Xilem,
+};
 
-struct Ekad {
-    window_id: WindowId,
-}
+#[derive(Default)]
+struct AppState {}
 
-impl AppDriver for Ekad {
-    fn on_action(
-        &mut self,
-        window_id: WindowId,
-        ctx: &mut DriverCtx<'_, '_>,
-        widget_id: WidgetId,
-        action: ErasedAction,
-    ) {
+impl AppState {
+    fn main(&mut self) -> impl WidgetView<AppState> {
+        flex(
+            Axis::Horizontal,
+            (
+                flex(Axis::Vertical, label("This is where the menu will go"))
+                    .border(Color::from_rgb8(255, 255, 255), 1.0)
+                    .flex(1.0),
+                (flex(
+                    Axis::Vertical,
+                    (
+                        label("This is where the breadcrumbs will go"),
+                        graph_viewer().flex(1.0),
+                    ),
+                )
+                .border(Color::from_rgb8(255, 255, 255), 1.0)
+                .flex(1.0)),
+                flex(
+                    Axis::Vertical,
+                    label("This is where the node editor will go"),
+                )
+                .border(Color::from_rgb8(255, 255, 255), 1.0)
+                .flex(1.0),
+            ),
+        )
     }
 }
 
-fn main() -> anyhow::Result<()> {
-    let window_size = LogicalSize::new(1044.0, 800.0);
-    let window_attributes = Window::default_attributes()
-        .with_title("Ekad")
-        .with_resizable(true)
-        .with_min_inner_size(window_size);
-
-    let driver = Ekad {
-        window_id: WindowId::next(),
-    };
-
-    let event_loop = masonry_winit::app::EventLoop::with_user_event()
-        .build()
-        .unwrap();
-
-    masonry_winit::app::run_with(
-        event_loop,
-        vec![NewWindow::new_with_id(
-            driver.window_id,
-            window_attributes,
-            NewWidget::new(GraphViewer::<graph::DatabaseGraph>::default()).erased(),
-        )],
-        driver,
-        default_property_set(),
-    )?;
-
+fn main() -> Result<(), EventLoopError> {
+    let app = Xilem::new_simple(
+        AppState::default(),
+        AppState::main,
+        WindowOptions::new("ekad"),
+    );
+    app.run_in(EventLoop::with_user_event())?;
     Ok(())
 }

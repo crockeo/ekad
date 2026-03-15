@@ -11,11 +11,13 @@ use masonry::kurbo::{Affine, Circle, Point, Size, Stroke, Vec2};
 use masonry::peniko::Color;
 use masonry::vello::Scene;
 use smallvec::SmallVec;
+use xilem::core::{MessageResult, Mut, View, ViewMarker};
+use xilem::{Pod, ViewCtx};
 
 use crate::shapes;
 use crate::text::{TextConfig, TextConfigBuilder, TextRenderer};
 use crate::{
-    graph::{Graph, Node, NodeIndex},
+    graph::{DatabaseGraph, Graph, Node, NodeIndex},
     text::HorizontalAlignment,
 };
 
@@ -29,7 +31,7 @@ lazy_static! {
     static ref LINE_STROKE: Stroke = Stroke::new(4.0);
 }
 
-pub struct GraphViewer<G> {
+pub struct GraphViewerWidget<G> {
     gesture: Gesture,
     graph: G,
     hotkey_state: EnumMap<Hotkey, bool>,
@@ -39,7 +41,7 @@ pub struct GraphViewer<G> {
     transform: Affine,
 }
 
-impl<G: Default + Graph> Default for GraphViewer<G> {
+impl<G: Default + Graph> Default for GraphViewerWidget<G> {
     fn default() -> Self {
         Self {
             gesture: Default::default(),
@@ -55,7 +57,7 @@ impl<G: Default + Graph> Default for GraphViewer<G> {
     }
 }
 
-impl<G: Graph> GraphViewer<G> {
+impl<G: Graph> GraphViewerWidget<G> {
     fn hovered_circle(&self) -> Option<NodeIndex> {
         // TODO: replace with something like kdtree: https://crates.io/crates/kdtree
         let Some(mouse_position) = self.mouse_position() else {
@@ -83,7 +85,7 @@ impl<G: Graph> GraphViewer<G> {
     }
 }
 
-impl<G: Graph + 'static> Widget for GraphViewer<G> {
+impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
     type Action = NoAction;
 
     fn on_pointer_event(
@@ -522,4 +524,47 @@ fn update_title(title: &str, key: &KeyboardEvent) -> Option<String> {
         }
         _ => None,
     }
+}
+
+pub struct GraphViewer;
+
+impl ViewMarker for GraphViewer {}
+
+impl<AppState: 'static, Action: 'static> View<AppState, Action, ViewCtx> for GraphViewer {
+    type Element = Pod<GraphViewerWidget<DatabaseGraph>>;
+    type ViewState = ();
+
+    fn build(&self, ctx: &mut ViewCtx, _: &mut AppState) -> (Self::Element, Self::ViewState) {
+        (
+            ctx.create_pod(GraphViewerWidget::<DatabaseGraph>::default()),
+            (),
+        )
+    }
+
+    fn rebuild(
+        &self,
+        _prev: &Self,
+        _: &mut Self::ViewState,
+        _: &mut ViewCtx,
+        _: Mut<'_, Self::Element>,
+        _: &mut AppState,
+    ) {
+        // Nothing to rebuild
+    }
+
+    fn teardown(&self, _: &mut Self::ViewState, _: &mut ViewCtx, _: Mut<'_, Self::Element>) {}
+
+    fn message(
+        &self,
+        _: &mut Self::ViewState,
+        _: &mut xilem::core::MessageContext,
+        _: Mut<'_, Self::Element>,
+        _: &mut AppState,
+    ) -> MessageResult<Action> {
+        MessageResult::Stale
+    }
+}
+
+pub fn graph_viewer() -> GraphViewer {
+    GraphViewer
 }
