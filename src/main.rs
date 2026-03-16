@@ -6,8 +6,9 @@ mod text;
 use crate::graph_viewer::graph_viewer;
 use winit::error::EventLoopError;
 use xilem::{
+    style::Style,
     view::{flex, grid, label, Axis, GridExt, GridParams},
-    EventLoop, WidgetView, WindowOptions, Xilem,
+    Color, EventLoop, WidgetView, WindowOptions, Xilem,
 };
 
 #[derive(Default)]
@@ -23,34 +24,10 @@ impl AppState {
             5,
             1,
         )
-        //
-        // flex(
-        //     Axis::Horizontal,
-        //     (
-        //         flex(Axis::Vertical, label("This is where the menu will go"))
-        //             .border(Color::from_rgb8(255, 255, 255), 1.0)
-        //             .flex(1.0),
-        //         (flex(
-        //             Axis::Vertical,
-        //             (
-        //                 label("This is where the breadcrumbs will go"),
-        //                 graph_viewer().flex(1.0),
-        //             ),
-        //         )
-        //         .border(Color::from_rgb8(255, 255, 255), 1.0)
-        //         .flex(1.0)),
-        //         flex(
-        //             Axis::Vertical,
-        //             label("This is where the node editor will go"),
-        //         )
-        //         .border(Color::from_rgb8(255, 255, 255), 1.0)
-        //         .flex(1.0),
-        //     ),
-        // )
     }
 
     fn menu_pane(&mut self) -> impl WidgetView<AppState> {
-        flex(Axis::Vertical, label("Menu pane"))
+        flex(Axis::Vertical, label("Menu pane")).background_color(Color::from_rgb8(32, 32, 32))
     }
 
     fn content_pane(&mut self) -> impl WidgetView<AppState> {
