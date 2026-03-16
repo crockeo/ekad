@@ -21,6 +21,23 @@ pub trait Graph {
     fn node_indices(&self) -> anyhow::Result<Vec<NodeIndex>>;
     fn remove_node(&mut self, index: NodeIndex) -> anyhow::Result<()>;
     fn set_node(&mut self, index: NodeIndex, node: Node) -> anyhow::Result<()>;
+
+    /// Returns true if adding an edge from `from` to `to` would create a cycle.
+    fn would_create_cycle(&self, from: NodeIndex, to: NodeIndex) -> anyhow::Result<bool> {
+        let mut visited = std::collections::HashSet::new();
+        let mut stack = vec![to];
+        while let Some(current) = stack.pop() {
+            if current == from {
+                return Ok(true);
+            }
+            if visited.insert(current) {
+                for neighbor in self.neighbors(current)? {
+                    stack.push(neighbor);
+                }
+            }
+        }
+        Ok(false)
+    }
 }
 
 #[derive(Default)]
@@ -28,6 +45,9 @@ pub struct PetgraphGraph(DiGraph<Node, (), NodeIndex>);
 
 impl Graph for PetgraphGraph {
     fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) -> anyhow::Result<()> {
+        if self.would_create_cycle(from, to)? {
+            anyhow::bail!("Adding edge would create a cycle");
+        }
         self.0.update_edge(from.into(), to.into(), ());
         Ok(())
     }
@@ -123,6 +143,9 @@ impl DatabaseGraph {
 
 impl Graph for DatabaseGraph {
     fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) -> anyhow::Result<()> {
+        if self.would_create_cycle(from, to)? {
+            anyhow::bail!("Adding edge would create a cycle");
+        }
         self.conn.execute(
             r#"
             INSERT OR REPLACE INTO task_links (

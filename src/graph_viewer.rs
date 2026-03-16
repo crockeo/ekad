@@ -201,7 +201,9 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                     Gesture::Editing { node_id: to }
                 }
                 (Gesture::AddingEdge { from }, Some(to)) => {
-                    self.graph.add_edge(from, to).unwrap();
+                    if !self.graph.would_create_cycle(from, to).unwrap_or(true) {
+                        self.graph.add_edge(from, to).unwrap();
+                    }
                     Gesture::Inactive
                 }
                 (Gesture::Deleting, Some(node_id)) => {
@@ -332,11 +334,19 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 Some(mouse_position) => shapes::in_circle(&mouse_position, &node.circle),
             };
 
+            let would_create_cycle = match self.gesture {
+                Gesture::AddingEdge { from } => self
+                    .graph
+                    .would_create_cycle(from, circle_id)
+                    .unwrap_or(true),
+                _ => false,
+            };
+
             let circle_fill_color = if is_in_circle && self.gesture == Gesture::Deleting {
                 BASE_COLOR.with_alpha(0.25)
             } else if is_in_circle & self.hotkey_state[Hotkey::Control] {
                 BASE_COLOR.with_alpha(0.5)
-            } else if is_in_circle {
+            } else if is_in_circle && !would_create_cycle {
                 LIGHT_COLOR
             } else {
                 BASE_COLOR
@@ -426,12 +436,14 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 );
             }
             (_, Gesture::AddingEdge { from }, Some(to)) => {
-                draw_arrow_between(
-                    &mut scene,
-                    &PREVIEW_COLOR,
-                    &self.graph.get_node(from).unwrap().circle,
-                    &self.graph.get_node(to).unwrap().circle,
-                );
+                if !self.graph.would_create_cycle(from, to).unwrap_or(true) {
+                    draw_arrow_between(
+                        &mut scene,
+                        &PREVIEW_COLOR,
+                        &self.graph.get_node(from).unwrap().circle,
+                        &self.graph.get_node(to).unwrap().circle,
+                    );
+                }
             }
             _ => {}
         }
