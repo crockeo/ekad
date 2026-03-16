@@ -7,7 +7,7 @@ use masonry::core::{
     NoAction, PaintCtx, PointerEvent, PropertiesMut, PropertiesRef, QueryCtx, RegisterCtx,
     ScrollDelta, TextEvent, Widget, WidgetId,
 };
-use masonry::kurbo::{Affine, Circle, Point, Size, Stroke, Vec2};
+use masonry::kurbo::{Affine, Circle, Point, Rect, Size, Stroke, Vec2};
 use masonry::peniko::Color;
 use masonry::vello::Scene;
 use smallvec::SmallVec;
@@ -107,9 +107,10 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
         }
 
         if let PointerEvent::Move(pointer_update) = event {
+            let bounding_rect = ctx.bounding_rect();
             let new_position = Point::new(
-                pointer_update.current.position.x / 2.0,
-                pointer_update.current.position.y / 2.0,
+                pointer_update.current.position.x / 2.0 - bounding_rect.x0,
+                pointer_update.current.position.y / 2.0 - bounding_rect.y0,
             );
 
             if let (Gesture::Panning, Some(raw_mouse_position)) =
@@ -308,11 +309,20 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
 
     fn paint(
         &mut self,
-        _ctx: &mut PaintCtx<'_>,
+        ctx: &mut PaintCtx<'_>,
         _props: &PropertiesRef<'_>,
         parent_scene: &mut Scene,
     ) {
         let mut scene = Scene::new();
+        let size = ctx.size();
+        let clip_rect = Rect::from_origin_size(Point::ORIGIN, size);
+
+        scene.push_layer(
+            vello::peniko::BlendMode::default(),
+            1.0,
+            self.transform.inverse(),
+            &clip_rect,
+        );
 
         for circle_id in self.graph.node_indices().unwrap() {
             let node = self.graph.get_node(circle_id).unwrap();
@@ -426,6 +436,7 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
             _ => {}
         }
 
+        scene.pop_layer();
         parent_scene.append(&scene, Some(self.transform));
     }
 
