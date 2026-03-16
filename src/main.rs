@@ -3,6 +3,9 @@ mod graph_viewer;
 mod shapes;
 mod text;
 
+use std::sync::{Arc, Mutex};
+
+use crate::graph::DatabaseGraph;
 use crate::graph_viewer::graph_viewer;
 use winit::error::EventLoopError;
 use xilem::{
@@ -11,8 +14,17 @@ use xilem::{
     Color, EventLoop, WidgetView, WindowOptions, Xilem,
 };
 
-#[derive(Default)]
-struct AppState {}
+struct AppState {
+    graph: Arc<Mutex<DatabaseGraph>>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            graph: Arc::new(Mutex::new(DatabaseGraph::default())),
+        }
+    }
+}
 
 impl AppState {
     fn main(&mut self) -> impl WidgetView<AppState> {
@@ -31,7 +43,7 @@ impl AppState {
     }
 
     fn content_pane(&mut self) -> impl WidgetView<AppState> {
-        graph_viewer()
+        graph_viewer(self.graph.clone())
     }
 }
 
