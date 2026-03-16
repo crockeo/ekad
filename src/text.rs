@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use vello::kurbo::Affine;
+use vello::kurbo::{Affine, Vec2};
 use vello::peniko::{Blob, Brush, Color, Fill, FontData};
 use skrifa::{metrics::GlyphMetrics, raw::FontRef, MetadataProvider};
 use vello::{DrawGlyphs, Glyph, Scene};
@@ -108,6 +108,91 @@ impl TextRenderer {
         let width = max_width;
         let height = line_height * line_count as f32;
         (width, height)
+    }
+
+    pub fn word_wrap(&self, text_config: &TextConfig, text: &str) -> String {
+        if text.is_empty() {
+            return String::new();
+        }
+
+        let font_ref = to_font_ref(&self.font).unwrap();
+        let font_size = skrifa::instance::Size::new(text_config.font_size);
+        let axes = font_ref.axes();
+        let variations: &[(&str, f32)] = &[];
+        let var_loc = axes.location(variations);
+        let metrics = font_ref.metrics(font_size, &var_loc);
+        let line_height = metrics.ascent - metrics.descent + metrics.leading;
+        let glyph_metrics = font_ref.glyph_metrics(font_size, &var_loc);
+
+        let mut result_lines: Vec<String> = Vec::new();
+
+        for paragraph in text.split('\n') {
+            let words: Vec<&str> = paragraph.split_whitespace().collect();
+            if words.is_empty() {
+                result_lines.push(String::new());
+                continue;
+            }
+            if words.len() == 1 {
+                result_lines.push(words[0].to_string());
+                continue;
+            }
+
+            let total_width = measure_str_width(&font_ref, &glyph_metrics, paragraph);
+            let ideal_line_count = (total_width / line_height).sqrt().ceil().max(1.0);
+            let target_width = total_width / ideal_line_count;
+
+            let space_width = measure_str_width(&font_ref, &glyph_metrics, " ");
+            let mut current_line = String::new();
+            let mut current_width = 0.0f32;
+
+            for word in &words {
+                let word_width = measure_str_width(&font_ref, &glyph_metrics, word);
+                if current_line.is_empty() {
+                    current_line.push_str(word);
+                    current_width = word_width;
+                } else if current_width + space_width + word_width > target_width {
+                    result_lines.push(current_line);
+                    current_line = word.to_string();
+                    current_width = word_width;
+                } else {
+                    current_line.push(' ');
+                    current_line.push_str(word);
+                    current_width += space_width + word_width;
+                }
+            }
+            if !current_line.is_empty() {
+                result_lines.push(current_line);
+            }
+        }
+
+        let mut result = result_lines.join("\n");
+        let trailing_spaces = text.len() - text.trim_end().len();
+        for _ in 0..trailing_spaces {
+            result.push(' ');
+        }
+        result
+    }
+
+    pub fn render_node_text(
+        &self,
+        scene: &mut Scene,
+        text_config: &TextConfig,
+        text: &str,
+        is_editing: bool,
+        center: impl Into<Vec2>,
+        bounding_square_size: f64,
+    ) {
+        let display_title = self.word_wrap(text_config, text);
+        let (text_width, text_height) = self.render_box(text_config, &display_title);
+        let text_max_size = text_width.max(text_height) as f64;
+
+        let mut transform = Affine::IDENTITY;
+        if text_max_size > bounding_square_size {
+            transform = transform.then_scale(bounding_square_size / text_max_size);
+        }
+        transform = transform.then_translate(center.into());
+
+        self.render_with_transform(scene, text_config, transform, &display_title, is_editing);
     }
 
     pub fn render_with_transform(
@@ -225,6 +310,16 @@ fn line_width(font_ref: &FontRef, glyph_metrics: &GlyphMetrics, chars: &[char]) 
     width
 }
 
+fn measure_str_width(font_ref: &FontRef, glyph_metrics: &GlyphMetrics, s: &str) -> f32 {
+    let charmap = font_ref.charmap();
+    let mut width = 0.0f32;
+    for ch in s.chars() {
+        let gid = charmap.map(ch).unwrap_or_default();
+        width += glyph_metrics.advance_width(gid).unwrap_or_default();
+    }
+    width
+}
+
 fn to_font_ref(font: &FontData) -> Option<FontRef<'_>> {
     use skrifa::raw::FileRef;
     let file_ref = FileRef::new(font.data.as_ref()).ok()?;
@@ -237,6 +332,61 @@ fn to_font_ref(font: &FontData) -> Option<FontRef<'_>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn default_text_config() -> TextConfig {
+        TextConfigBuilder::default()
+            .set_font_size(24.0)
+            .build()
+    }
+
+    #[test]
+    fn test_word_wrap_empty() {
+        let renderer = TextRenderer::default();
+        let config = default_text_config();
+        assert_eq!(renderer.word_wrap(&config, ""), "");
+    }
+
+    #[test]
+    fn test_word_wrap_single_word() {
+        let renderer = TextRenderer::default();
+        let config = default_text_config();
+        assert_eq!(renderer.word_wrap(&config, "hello"), "hello");
+    }
+
+    #[test]
+    fn test_word_wrap_short_text() {
+        let renderer = TextRenderer::default();
+        let config = default_text_config();
+        let result = renderer.word_wrap(&config, "hi there");
+        let words: Vec<&str> = result.split_whitespace().collect();
+        assert_eq!(words, vec!["hi", "there"]);
+    }
+
+    #[test]
+    fn test_word_wrap_long_sentence() {
+        let renderer = TextRenderer::default();
+        let config = default_text_config();
+        let result = renderer.word_wrap(&config, "the quick brown fox jumps over the lazy dog");
+        assert!(result.contains('\n'));
+        let words_original: Vec<&str> = "the quick brown fox jumps over the lazy dog".split_whitespace().collect();
+        let words_wrapped: Vec<&str> = result.split_whitespace().collect();
+        assert_eq!(words_original, words_wrapped);
+    }
+
+    #[test]
+    fn test_word_wrap_preserves_existing_newlines() {
+        let renderer = TextRenderer::default();
+        let config = default_text_config();
+        let result = renderer.word_wrap(&config, "hello\nworld");
+        assert_eq!(result, "hello\nworld");
+    }
+
+    #[test]
+    fn test_word_wrap_no_spaces() {
+        let renderer = TextRenderer::default();
+        let config = default_text_config();
+        assert_eq!(renderer.word_wrap(&config, "abcdefghijklmnop"), "abcdefghijklmnop");
+    }
 
     #[test]
     fn test_next_line__empty() {
