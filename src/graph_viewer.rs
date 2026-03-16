@@ -112,8 +112,8 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
         if let PointerEvent::Move(pointer_update) = event {
             let bounding_rect = ctx.bounding_rect();
             let new_position = Point::new(
-                pointer_update.current.position.x / 2.0 - bounding_rect.x0,
-                pointer_update.current.position.y / 2.0 - bounding_rect.y0,
+                pointer_update.current.position.x - bounding_rect.x0,
+                pointer_update.current.position.y - bounding_rect.y0,
             );
 
             if let (Gesture::Panning, Some(raw_mouse_position)) =
@@ -162,7 +162,14 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                         .expect("Must have mouse_position() if you also have hovered_circle()");
                     Gesture::MovingNode {
                         node_id: circle,
-                        initial_distance: self.graph.lock().unwrap().get_node(circle).unwrap().circle.center
+                        initial_distance: self
+                            .graph
+                            .lock()
+                            .unwrap()
+                            .get_node(circle)
+                            .unwrap()
+                            .circle
+                            .center
                             - mouse_position,
                     }
                 }
@@ -180,7 +187,8 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 (Gesture::AddingNode, None) => {
                     if let Some(mouse_position) = mouse_position {
                         self.graph
-                            .lock().unwrap()
+                            .lock()
+                            .unwrap()
                             .add_node(Node {
                                 title: "".to_owned(),
                                 circle: Circle::new(mouse_position, CIRCLE_RADIUS),
@@ -343,9 +351,9 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
             };
 
             let would_create_cycle = match self.gesture {
-                Gesture::AddingEdge { from } => graph
-                    .would_create_cycle(from, circle_id)
-                    .unwrap_or(true),
+                Gesture::AddingEdge { from } => {
+                    graph.would_create_cycle(from, circle_id).unwrap_or(true)
+                }
                 _ => false,
             };
 
