@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use enum_map::{Enum, EnumMap};
 use lazy_static::lazy_static;
 use masonry::accesskit::Role;
@@ -33,7 +35,7 @@ lazy_static! {
 
 pub struct GraphViewerWidget<G> {
     gesture: Gesture,
-    graph: G,
+    graph: Arc<Mutex<G>>,
     hotkey_state: EnumMap<Hotkey, bool>,
     raw_mouse_position: Option<Point>,
     text_config: TextConfig,
@@ -41,11 +43,11 @@ pub struct GraphViewerWidget<G> {
     transform: Affine,
 }
 
-impl<G: Default + Graph> Default for GraphViewerWidget<G> {
-    fn default() -> Self {
+impl<G: Graph> GraphViewerWidget<G> {
+    fn new(graph: Arc<Mutex<G>>) -> Self {
         Self {
             gesture: Default::default(),
-            graph: Default::default(),
+            graph,
             hotkey_state: Default::default(),
             raw_mouse_position: Default::default(),
             text_config: TextConfigBuilder::default()
@@ -64,8 +66,9 @@ impl<G: Graph> GraphViewerWidget<G> {
             return None;
         };
 
-        for node_id in self.graph.node_indices().unwrap() {
-            let node = self.graph.get_node(node_id).unwrap();
+        let graph = self.graph.lock().unwrap();
+        for node_id in graph.node_indices().unwrap() {
+            let node = graph.get_node(node_id).unwrap();
             if shapes::in_circle(&mouse_position, &node.circle) {
                 return Some(node_id);
             }
@@ -127,9 +130,10 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 initial_distance,
             } = self.gesture
             {
-                let mut node = self.graph.get_node(node_id).unwrap();
+                let mut graph = self.graph.lock().unwrap();
+                let mut node = graph.get_node(node_id).unwrap();
                 node.circle.center = (self.transform.inverse() * new_position) + initial_distance;
-                self.graph.set_node(node_id, node).unwrap();
+                graph.set_node(node_id, node).unwrap();
             }
 
             self.raw_mouse_position = Some(new_position);
@@ -158,7 +162,7 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                         .expect("Must have mouse_position() if you also have hovered_circle()");
                     Gesture::MovingNode {
                         node_id: circle,
-                        initial_distance: self.graph.get_node(circle).unwrap().circle.center
+                        initial_distance: self.graph.lock().unwrap().get_node(circle).unwrap().circle.center
                             - mouse_position,
                     }
                 }
@@ -176,6 +180,7 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 (Gesture::AddingNode, None) => {
                     if let Some(mouse_position) = mouse_position {
                         self.graph
+                            .lock().unwrap()
                             .add_node(Node {
                                 title: "".to_owned(),
                                 circle: Circle::new(mouse_position, CIRCLE_RADIUS),
@@ -186,14 +191,14 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 }
                 (Gesture::AddingEdge { from }, None) => {
                     if let Some(mouse_position) = mouse_position {
-                        let to = self
-                            .graph
+                        let mut graph = self.graph.lock().unwrap();
+                        let to = graph
                             .add_node(Node {
                                 title: "".to_owned(),
                                 circle: Circle::new(mouse_position, CIRCLE_RADIUS),
                             })
                             .unwrap();
-                        self.graph.add_edge(from, to).unwrap();
+                        graph.add_edge(from, to).unwrap();
                     }
                     Gesture::Inactive
                 }
@@ -201,13 +206,14 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                     Gesture::Editing { node_id: to }
                 }
                 (Gesture::AddingEdge { from }, Some(to)) => {
-                    if !self.graph.would_create_cycle(from, to).unwrap_or(true) {
-                        self.graph.add_edge(from, to).unwrap();
+                    let mut graph = self.graph.lock().unwrap();
+                    if !graph.would_create_cycle(from, to).unwrap_or(true) {
+                        graph.add_edge(from, to).unwrap();
                     }
                     Gesture::Inactive
                 }
                 (Gesture::Deleting, Some(node_id)) => {
-                    self.graph.remove_node(node_id).unwrap();
+                    self.graph.lock().unwrap().remove_node(node_id).unwrap();
                     Gesture::Inactive
                 }
                 _ => Gesture::Inactive,
@@ -256,10 +262,11 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
         };
 
         if let Gesture::Editing { node_id } = self.gesture {
-            let mut node = self.graph.get_node(node_id).unwrap();
+            let mut graph = self.graph.lock().unwrap();
+            let mut node = graph.get_node(node_id).unwrap();
             if let Some(new_title) = update_title(&node.title, key) {
                 node.title = new_title;
-                self.graph.set_node(node_id, node).unwrap();
+                graph.set_node(node_id, node).unwrap();
                 ctx.request_paint_only();
             }
             ctx.request_paint_only();
@@ -326,8 +333,9 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
             &clip_rect,
         );
 
-        for circle_id in self.graph.node_indices().unwrap() {
-            let node = self.graph.get_node(circle_id).unwrap();
+        let graph = self.graph.lock().unwrap();
+        for circle_id in graph.node_indices().unwrap() {
+            let node = graph.get_node(circle_id).unwrap();
 
             let is_in_circle = match self.mouse_position() {
                 None => false,
@@ -335,8 +343,7 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
             };
 
             let would_create_cycle = match self.gesture {
-                Gesture::AddingEdge { from } => self
-                    .graph
+                Gesture::AddingEdge { from } => graph
                     .would_create_cycle(from, circle_id)
                     .unwrap_or(true),
                 _ => false,
@@ -382,8 +389,8 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 }
             }
 
-            for neighbor_circle_id in self.graph.neighbors(circle_id).unwrap() {
-                let neighbor_node = &self.graph.get_node(neighbor_circle_id).unwrap();
+            for neighbor_circle_id in graph.neighbors(circle_id).unwrap() {
+                let neighbor_node = &graph.get_node(neighbor_circle_id).unwrap();
                 draw_arrow_between(&mut scene, &BASE_COLOR, &node.circle, &neighbor_node.circle);
             }
 
@@ -408,6 +415,7 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 is_editing,
             );
         }
+        drop(graph);
 
         match (self.mouse_position(), self.gesture, self.hovered_circle()) {
             (Some(mouse_position), Gesture::AddingNode, None) => {
@@ -420,6 +428,7 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 );
             }
             (Some(mouse_position), Gesture::AddingEdge { from }, None) => {
+                let graph = self.graph.lock().unwrap();
                 let preview_circle = Circle::new(mouse_position, CIRCLE_RADIUS);
                 scene.fill(
                     vello::peniko::Fill::NonZero,
@@ -431,17 +440,18 @@ impl<G: Graph + 'static> Widget for GraphViewerWidget<G> {
                 draw_arrow_between(
                     &mut scene,
                     &PREVIEW_COLOR,
-                    &self.graph.get_node(from).unwrap().circle,
+                    &graph.get_node(from).unwrap().circle,
                     &preview_circle,
                 );
             }
             (_, Gesture::AddingEdge { from }, Some(to)) => {
-                if !self.graph.would_create_cycle(from, to).unwrap_or(true) {
+                let graph = self.graph.lock().unwrap();
+                if !graph.would_create_cycle(from, to).unwrap_or(true) {
                     draw_arrow_between(
                         &mut scene,
                         &PREVIEW_COLOR,
-                        &self.graph.get_node(from).unwrap().circle,
-                        &self.graph.get_node(to).unwrap().circle,
+                        &graph.get_node(from).unwrap().circle,
+                        &graph.get_node(to).unwrap().circle,
                     );
                 }
             }
@@ -549,7 +559,9 @@ fn update_title(title: &str, key: &KeyboardEvent) -> Option<String> {
     }
 }
 
-pub struct GraphViewer;
+pub struct GraphViewer {
+    graph: Arc<Mutex<DatabaseGraph>>,
+}
 
 impl ViewMarker for GraphViewer {}
 
@@ -559,7 +571,7 @@ impl<AppState: 'static, Action: 'static> View<AppState, Action, ViewCtx> for Gra
 
     fn build(&self, ctx: &mut ViewCtx, _: &mut AppState) -> (Self::Element, Self::ViewState) {
         (
-            ctx.create_pod(GraphViewerWidget::<DatabaseGraph>::default()),
+            ctx.create_pod(GraphViewerWidget::new(self.graph.clone())),
             (),
         )
     }
@@ -588,6 +600,6 @@ impl<AppState: 'static, Action: 'static> View<AppState, Action, ViewCtx> for Gra
     }
 }
 
-pub fn graph_viewer() -> GraphViewer {
-    GraphViewer
+pub fn graph_viewer(graph: Arc<Mutex<DatabaseGraph>>) -> GraphViewer {
+    GraphViewer { graph }
 }
